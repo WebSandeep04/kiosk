@@ -24,37 +24,22 @@ export const loadCachedEmployees = createAsyncThunk('employees/loadCached', asyn
 });
 
 export const syncEmployeesFromServer = createAsyncThunk('employees/syncFromServer', async () => {
-  console.log('[KioskSync] Initiating background biometric database synchronization...');
-  console.log('[KioskSync] GET request target: "/kiosk/employees/embeddings"');
-
-  try {
-    const response = await apiClient.get('/kiosk/employees/embeddings');
-    console.log(`[KioskSync] Synchronization response status code: ${response.status}`);
-    const data = response.data;
-    
-    // Unwrap standard Laravel { data: [...] } envelope structure
-    const payload = data && typeof data === 'object' && 'data' in data ? data.data : data;
-    const rawData = Array.isArray(payload) ? payload : [];
-    
-    console.log(`[KioskSync] Retrieved ${rawData.length} active employee signatures from backend.`);
-    
-    const formatted = rawData.map((emp: any) => ({
-      employee_id: emp.employee_id,
-      user_id: emp.user_id,
-      name: emp.name,
-      embeddings: Array.isArray(emp.embeddings) ? emp.embeddings : [],
-    }));
-    
-    console.log('[KioskSync] Committing synchronized embeddings to local SQLite storage database...');
-    await storageService.saveEmployees(formatted);
-    console.log('[KioskSync] Biometric sync and storage commit completed successfully!');
-    
-    return formatted;
-  } catch (err: any) {
-    console.error('[KioskSync] Biometric sync execution caught an error block:');
-    console.error(`[KioskSync] Error context: ${err.message || err}`);
-    throw err;
-  }
+  const response = await apiClient.get('/kiosk/employees/embeddings');
+  const data = response.data;
+  
+  // Unwrap standard Laravel { data: [...] } envelope structure
+  const payload = data && typeof data === 'object' && 'data' in data ? data.data : data;
+  const rawData = Array.isArray(payload) ? payload : [];
+  
+  const formatted = rawData.map((emp: any) => ({
+    employee_id: emp.employee_id,
+    user_id: emp.user_id,
+    name: emp.name,
+    embeddings: Array.isArray(emp.embeddings) ? emp.embeddings : [],
+  }));
+  
+  await storageService.saveEmployees(formatted);
+  return formatted;
 });
 
 export const enrollFaceAction = createAsyncThunk(

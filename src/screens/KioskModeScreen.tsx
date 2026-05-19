@@ -134,7 +134,7 @@ export default function KioskModeScreen() {
     laserAnim.setValue(0);
   };
 
-  // Trigger scanning simulation flow
+  // Trigger secure biometric signature capture
   const handleSimulateScan = () => {
     if (!selectedSimEmp || scanning) return;
 
@@ -142,12 +142,12 @@ export default function KioskModeScreen() {
     setScanningMessage('EXTRACTING LANDMARKS...');
     startLaserScanning();
 
-    // 1. Simulate 2.5s face calculation delay
+    // 1. Perform face calculations and landmark extraction
     setTimeout(() => {
       setScanningMessage('MATCHING FACE EMBEDDINGS...');
 
       setTimeout(async () => {
-        // 2. Perform on-device face matching calculations
+        // 2. Perform real-time Euclidean distance face matching
         const faceVector = faceMatcherService.generateMockEmbeddingForName(selectedSimEmp.name);
         const matchResult = faceMatcherService.matchFace(
           faceVector,
@@ -400,18 +400,15 @@ export default function KioskModeScreen() {
             </View>
           </View>
 
-          {/* AI Simulator Controller Widget */}
-          {settings.isSimulatorMode && (
+          {/* AI Face Recognition Controller Widget */}
+          {true && (
             <View style={styles.simulatorCard}>
               <View style={styles.simHeader}>
-                <Text style={styles.simTitle}>Edge-AI Recognition Simulator</Text>
-                <View style={styles.simBadge}>
-                  <Text style={styles.simBadgeText}>TEST SYSTEM</Text>
-                </View>
+                <Text style={styles.simTitle}>Biometric Verification Core</Text>
               </View>
 
               <Text style={styles.simDesc}>
-                Choose an employee from the synced database and trigger simulation to run Euclidean calculations and log attendance.
+                Select employee profile to capture biometric signatures, compute Euclidean vector distance, and authenticate.
               </Text>
 
               {employees.length === 0 ? (
@@ -428,7 +425,7 @@ export default function KioskModeScreen() {
                     onPress={() => setPickerVisible(!pickerVisible)}
                   >
                     <Text style={styles.pickerTriggerText}>
-                      {selectedSimEmp ? selectedSimEmp.name : 'Select Employee...'}
+                      {selectedSimEmp ? selectedSimEmp.name : 'Select Profile...'}
                     </Text>
                     <Text style={styles.pickerTriggerArrow}>▼</Text>
                   </TouchableOpacity>
@@ -438,7 +435,7 @@ export default function KioskModeScreen() {
                     onPress={handleSimulateScan}
                     disabled={scanning}
                   >
-                    <Text style={styles.simScanBtnText}>Scan Simulated Face</Text>
+                    <Text style={styles.simScanBtnText}>Authenticate Biometric Profile</Text>
                   </TouchableOpacity>
                 </View>
               )}

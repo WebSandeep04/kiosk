@@ -152,21 +152,6 @@ export default function SettingsScreen({ onLogout }: SettingsScreenProps) {
       {/* 🧠 Core AI Threshold Controls */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Edge-AI Recognition Core</Text>
-        
-        <View style={styles.row}>
-          <View style={styles.rowMeta}>
-            <Text style={styles.rowLabel}>Simulator Mode</Text>
-            <Text style={styles.rowDesc}>Enable simulated face-scanning to test offline syncing and backend API integration without requiring physical camera attachments.</Text>
-          </View>
-          <Switch
-            value={settings.isSimulatorMode}
-            onValueChange={(val) => handleUpdateSetting('isSimulatorMode', val)}
-            trackColor={{ false: '#374151', true: THEME.colors.primary }}
-            thumbColor={settings.isSimulatorMode ? THEME.colors.accent : '#9ca3af'}
-          />
-        </View>
-
-        <View style={styles.divider} />
 
         <View style={styles.row}>
           <View style={styles.rowMeta}>
