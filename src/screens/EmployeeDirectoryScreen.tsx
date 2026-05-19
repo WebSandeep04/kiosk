@@ -11,6 +11,7 @@ import {
   Alert,
   Animated,
 } from 'react-native';
+import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
 import { THEME } from '../constants/theme';
 import { storageService, CachedEmployee } from '../services/storage';
 import { apiService } from '../services/api';
@@ -26,13 +27,21 @@ export default function EmployeeDirectoryScreen() {
   const [allBackendEmployees, setAllBackendEmployees] = useState<any[]>([]); // Includes un-enrolled
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
-
   // Enrollment Modal state
   const [enrollModalVisible, setEnrollModalVisible] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState<any | null>(null);
   const [enrollState, setEnrollState] = useState<'idle' | 'scanning' | 'extracting' | 'uploading' | 'success' | 'failed'>('idle');
   const [enrollProgress] = useState(new Animated.Value(0));
   const [enrollMessage, setEnrollMessage] = useState('');
+
+  const { hasPermission, requestPermission } = useCameraPermission();
+  const device = useCameraDevice('front');
+
+  useEffect(() => {
+    if (enrollModalVisible && !hasPermission) {
+      requestPermission();
+    }
+  }, [enrollModalVisible, hasPermission]);
 
   const loadEmployees = async () => {
     setLoading(true);
@@ -270,6 +279,14 @@ export default function EmployeeDirectoryScreen() {
 
                 {/* Simulated guided camera viewport */}
                 <View style={styles.cameraViewport}>
+                  {device != null && hasPermission ? (
+                    <Camera
+                      style={StyleSheet.absoluteFill}
+                      device={device}
+                      isActive={enrollModalVisible}
+                    />
+                  ) : null}
+
                   {/* Neon guide oval */}
                   <View style={[
                     styles.faceGuideOval,

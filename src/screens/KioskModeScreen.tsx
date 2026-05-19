@@ -12,6 +12,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
+import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
 import { THEME } from '../constants/theme';
 import { storageService, KioskSettings, CachedEmployee } from '../services/storage';
 import { apiService, apiClient } from '../services/api';
@@ -32,6 +33,15 @@ export default function KioskModeScreen() {
   const totalPunchesToday = localLogs.filter(
     (l: any) => l.success && (l.action === 'in' || l.action === 'out' || l.action === 'offline_queued')
   ).length;
+
+  const { hasPermission, requestPermission } = useCameraPermission();
+  const device = useCameraDevice('front');
+
+  useEffect(() => {
+    if (!hasPermission) {
+      requestPermission();
+    }
+  }, [hasPermission]);
 
   // Simulation picker state
   const [pickerVisible, setPickerVisible] = useState(false);
@@ -365,6 +375,14 @@ export default function KioskModeScreen() {
         <View style={styles.leftPane}>
           <View style={styles.cameraFrameCard}>
             <View style={styles.scannerWrapper}>
+              {device != null && hasPermission ? (
+                <Camera
+                  style={StyleSheet.absoluteFill}
+                  device={device}
+                  isActive={true}
+                />
+              ) : null}
+
               {/* Neon border bounds corners */}
               <View style={[styles.corner, styles.topLeft]} />
               <View style={[styles.corner, styles.topRight]} />
