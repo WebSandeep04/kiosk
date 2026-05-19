@@ -6,6 +6,7 @@ export interface ApiResponse<T> {
   message?: string;
   data?: T;
   error?: string;
+  status?: number;
 }
 
 // 1. Define hardcoded URLs and toggle for Local Dev vs Live Production
@@ -31,6 +32,10 @@ apiClient.interceptors.request.use(async (config) => {
     config.headers.Authorization = `Bearer ${settings.authToken}`;
   }
 
+  if (settings.tenantId) {
+    config.headers['X-Tenant-ID'] = String(settings.tenantId);
+  }
+
   config.headers['Content-Type'] = 'application/json';
   config.headers.Accept = 'application/json';
 
@@ -50,10 +55,10 @@ export const apiService = {
 
       // Automatically unwrap standard Laravel { data: [...] } envelope structure
       const payload = data && typeof data === 'object' && 'data' in data ? data.data : data;
-      return { success: true, data: payload };
+      return { success: true, data: payload, status: response.status };
     } catch (err: any) {
       const errMsg = err.response?.data?.message || err.message || 'Request failed';
-      return { success: false, message: errMsg };
+      return { success: false, message: errMsg, status: err.response?.status };
     }
   },
 
@@ -67,10 +72,10 @@ export const apiService = {
 
       // Automatically unwrap standard Laravel { data: [...] } envelope structure
       const payload = data && typeof data === 'object' && 'data' in data ? data.data : data;
-      return { success: true, data: payload };
+      return { success: true, data: payload, status: response.status };
     } catch (err: any) {
       const errMsg = err.response?.data?.message || err.message || 'Request failed';
-      return { success: false, message: errMsg };
+      return { success: false, message: errMsg, status: err.response?.status };
     }
   },
 

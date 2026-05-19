@@ -50,11 +50,13 @@ export const kioskLoginAction = createAsyncThunk(
       if (response.data?.success && response.data?.data?.token) {
         const token = response.data.data.token;
         const user = response.data.data;
+        const tenantId = response.data.data.tenant_id;
 
-        // 1. Commit server URL and token successfully to local storage settings
+        // 1. Commit server URL, token, and tenantId successfully to local storage settings
         await storageService.saveSettings({
           serverUrl: GATEWAY_URL,
           authToken: token,
+          tenantId: tenantId,
         });
 
         return { token, user };

@@ -10,6 +10,7 @@ import {
   Modal,
   Alert,
   Animated,
+  Image,
 } from 'react-native';
 import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
 import { THEME } from '../constants/theme';
@@ -19,6 +20,7 @@ import { faceMatcherService } from '../services/faceMatcher';
 import { UsersIcon, SyncIcon, CameraIcon, CheckIcon, CrossIcon, InfoIcon } from '../components/Icons';
 import { useAppDispatch, useAppSelector } from '../store';
 import { loadCachedEmployees, syncEmployeesFromServer, enrollFaceAction } from '../store/employeesSlice';
+import { loadSettings } from '../store/settingsSlice';
 
 export default function EmployeeDirectoryScreen() {
   const dispatch = useAppDispatch();
@@ -55,6 +57,23 @@ export default function EmployeeDirectoryScreen() {
       if (res.success && res.data) {
         setAllBackendEmployees(res.data);
       } else {
+        if (res.status === 401) {
+          Alert.alert(
+            'Session Expired',
+            'Your biometric database connection has expired or could not be authenticated. Please re-authenticate your terminal.',
+            [
+              {
+                text: 'Re-authenticate',
+                onPress: async () => {
+                  await storageService.clearAll();
+                  dispatch(loadSettings());
+                }
+              }
+            ]
+          );
+          return;
+        }
+
         // Fallback: Use local cached profiles to construct list
         const fallbackList = employees.map(c => ({
           id: c.employee_id,
@@ -118,7 +137,7 @@ export default function EmployeeDirectoryScreen() {
 
       setTimeout(async () => {
         // 3. Generate Unit Vector embedding mathematically from Name
-        const name = `${selectedEmployee.first_name} ${selectedEmployee.last_name}`.trim();
+        const name = selectedEmployee.name || `${selectedEmployee.first_name || ''} ${selectedEmployee.last_name || ''}`.trim() || 'Unnamed';
         const vector = faceMatcherService.generateMockEmbeddingForName(name);
 
         // 4. Transition to Server Uploading
@@ -146,26 +165,36 @@ export default function EmployeeDirectoryScreen() {
   };
 
   const filteredEmployees = allBackendEmployees.filter(emp => {
-    const fullName = `${emp.first_name} ${emp.last_name}`.toLowerCase();
-    return fullName.includes(searchQuery.toLowerCase());
+    const fullName = emp.name || `${emp.first_name || ''} ${emp.last_name || ''}`.trim() || '';
+    return fullName.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   const renderEmployeeItem = ({ item }: { item: any }) => {
-    const fullName = `${item.first_name} ${item.last_name}`.trim();
+    const fullName = item.name || `${item.first_name || ''} ${item.last_name || ''}`.trim() || 'Unnamed';
     const isEnrolled = item.is_face_enrolled === 1 || item.is_face_enrolled === true;
+    const profilePic = item.profile_pic_url;
+
+    // Resolve initials cleanly
+    const initials = fullName
+      .split(' ')
+      .map((n: string) => n.charAt(0))
+      .join('')
+      .slice(0, 2)
+      .toUpperCase() || 'E';
 
     return (
       <View style={styles.employeeCard}>
         <View style={styles.cardInfo}>
-          <View style={[styles.avatarPlaceholder, isEnrolled && styles.avatarEnrolled]}>
-            <Text style={styles.avatarText}>
-              {item.first_name?.charAt(0)}
-              {item.last_name?.charAt(0)}
-            </Text>
-          </View>
+          {profilePic ? (
+            <Image source={{ uri: profilePic }} style={styles.avatarImage} />
+          ) : (
+            <View style={[styles.avatarPlaceholder, isEnrolled && styles.avatarEnrolled]}>
+              <Text style={styles.avatarText}>{initials}</Text>
+            </View>
+          )}
           <View style={styles.meta}>
             <Text style={styles.empName}>{fullName}</Text>
-            <Text style={styles.empId}>ID: EMP-{item.id} • User: #{item.user_id}</Text>
+            <Text style={styles.empId}>ID: EMP-{item.id} • User: #{item.user_id || 'N/A'}</Text>
           </View>
         </View>
 
@@ -441,6 +470,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     flex: 1,
+  },
+  avatarImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    marginRight: THEME.spacing.md,
   },
   avatarPlaceholder: {
     width: 44,

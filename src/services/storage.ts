@@ -20,6 +20,7 @@ export interface OfflinePunch {
 export interface KioskSettings {
   serverUrl: string;
   authToken: string;
+  tenantId: string | number;
   distanceThreshold: number;
   cameraSelected: 'front' | 'back';
   isSimulatorMode: boolean;
@@ -37,6 +38,7 @@ const KEYS = {
 const DEFAULT_SETTINGS: KioskSettings = {
   serverUrl: '', // Initial blank slate
   authToken: '',
+  tenantId: '',
   distanceThreshold: 0.6, // Euclidean threshold
   cameraSelected: 'front',
   isSimulatorMode: true, // Default to true so it works out of the box in emulator without native camera crash
