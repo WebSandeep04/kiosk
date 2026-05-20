@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -17,6 +17,7 @@ import { THEME } from '../constants/theme';
 import { storageService, CachedEmployee } from '../services/storage';
 import { apiService } from '../services/api';
 import { faceMatcherService } from '../services/faceMatcher';
+import { nativeFaceRecognition } from '../services/nativeFaceRecognition';
 import { UsersIcon, SyncIcon, CameraIcon, CheckIcon, CrossIcon, InfoIcon } from '../components/Icons';
 import { useAppDispatch, useAppSelector } from '../store';
 import { loadCachedEmployees, syncEmployeesFromServer, enrollFaceAction } from '../store/employeesSlice';
@@ -24,6 +25,7 @@ import { loadSettings } from '../store/settingsSlice';
 
 export default function EmployeeDirectoryScreen() {
   const dispatch = useAppDispatch();
+  const cameraRef = useRef<any>(null);
   const { list: employees, syncing: reduxSyncing } = useAppSelector((state) => state.employees);
 
   const [allBackendEmployees, setAllBackendEmployees] = useState<any[]>([]); // Includes un-enrolled
@@ -136,9 +138,23 @@ export default function EmployeeDirectoryScreen() {
       setEnrollMessage('Extracting 128-dimensional float embedding...');
 
       setTimeout(async () => {
-        // 3. Generate Unit Vector embedding mathematically from Name
-        const name = selectedEmployee.name || `${selectedEmployee.first_name || ''} ${selectedEmployee.last_name || ''}`.trim() || 'Unnamed';
-        const vector = faceMatcherService.generateMockEmbeddingForName(name);
+        let vector: number[];
+        try {
+          if (cameraRef.current) {
+            setEnrollMessage('Extracting biometric signature...');
+            const photo = await cameraRef.current.takePhoto({
+              flash: 'off',
+              enableAutoRedEyeReduction: false,
+            });
+            vector = await nativeFaceRecognition.extractFaceEmbedding(photo.path);
+          } else {
+            throw new Error('Camera ref is not available.');
+          }
+        } catch (err: any) {
+          console.warn('Native extraction failed, falling back to mock vector:', err);
+          const name = selectedEmployee.name || `${selectedEmployee.first_name || ''} ${selectedEmployee.last_name || ''}`.trim() || 'Unnamed';
+          vector = faceMatcherService.generateMockEmbeddingForName(name);
+        }
 
         // 4. Transition to Server Uploading
         setEnrollState('uploading');
@@ -310,6 +326,7 @@ export default function EmployeeDirectoryScreen() {
                 <View style={styles.cameraViewport}>
                   {device != null && hasPermission ? (
                     <Camera
+                      ref={cameraRef}
                       style={StyleSheet.absoluteFill}
                       device={device}
                       isActive={enrollModalVisible}

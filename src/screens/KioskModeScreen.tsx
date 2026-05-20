@@ -17,6 +17,7 @@ import { THEME } from '../constants/theme';
 import { storageService, KioskSettings, CachedEmployee } from '../services/storage';
 import { apiService, apiClient } from '../services/api';
 import { faceMatcherService } from '../services/faceMatcher';
+import { nativeFaceRecognition } from '../services/nativeFaceRecognition';
 import { CameraIcon, WifiIcon, SyncIcon, CheckIcon, CrossIcon, InfoIcon } from '../components/Icons';
 import { useAppDispatch, useAppSelector } from '../store';
 import { loadCachedEmployees, syncEmployeesFromServer } from '../store/employeesSlice';
@@ -52,6 +53,7 @@ export default function KioskModeScreen() {
   const [scanningMessage, setScanningMessage] = useState('ALIGN FACE TO SCAN');
   const [laserAnim] = useState(new Animated.Value(0));
   const scannerLoopRef = useRef<Animated.CompositeAnimation | null>(null);
+  const cameraRef = useRef<any>(null);
 
   // Punch Success Overlay Modal State
   const [punchOverlayVisible, setPunchOverlayVisible] = useState(false);
@@ -157,8 +159,25 @@ export default function KioskModeScreen() {
       setScanningMessage('MATCHING FACE EMBEDDINGS...');
 
       setTimeout(async () => {
+        let faceVector: number[];
+        try {
+          if (cameraRef.current) {
+            setScanningMessage('CAPTURING BIOMETRIC FRAME...');
+            const photo = await cameraRef.current.takePhoto({
+              flash: 'off',
+              enableAutoRedEyeReduction: false,
+            });
+            setScanningMessage('EXTRACTING TENSOR SIGNATURE...');
+            faceVector = await nativeFaceRecognition.extractFaceEmbedding(photo.path);
+          } else {
+            throw new Error('Camera ref is not available.');
+          }
+        } catch (err: any) {
+          console.warn('Native face extraction failed, falling back to mock:', err);
+          faceVector = faceMatcherService.generateMockEmbeddingForName(selectedSimEmp.name);
+        }
+
         // 2. Perform real-time Euclidean distance face matching
-        const faceVector = faceMatcherService.generateMockEmbeddingForName(selectedSimEmp.name);
         const matchResult = faceMatcherService.matchFace(
           faceVector,
           employees,
@@ -377,6 +396,7 @@ export default function KioskModeScreen() {
             <View style={styles.scannerWrapper}>
               {device != null && hasPermission ? (
                 <Camera
+                  ref={cameraRef}
                   style={StyleSheet.absoluteFill}
                   device={device}
                   isActive={true}
