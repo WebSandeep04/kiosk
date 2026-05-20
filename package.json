@@ -21,6 +21,7 @@
     "react-native-nitro-modules": "^0.35.6",
     "react-native-safe-area-context": "^5.5.2",
     "react-native-vision-camera": "^5.0.9",
+    "react-native-worklets-core": "^1.6.3",
     "react-redux": "^9.3.0"
   },
   "devDependencies": {

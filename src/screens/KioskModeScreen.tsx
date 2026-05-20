@@ -44,15 +44,6 @@ export default function KioskModeScreen() {
     }
   }, [hasPermission]);
 
-  // Simulation picker state
-  const [pickerVisible, setPickerVisible] = useState(false);
-  const [selectedSimEmp, setSelectedSimEmp] = useState<CachedEmployee | null>(null);
-
-  // Scanner Animation & State
-  const [scanning, setScanning] = useState(false);
-  const [scanningMessage, setScanningMessage] = useState('ALIGN FACE TO SCAN');
-  const [laserAnim] = useState(new Animated.Value(0));
-  const scannerLoopRef = useRef<Animated.CompositeAnimation | null>(null);
   const cameraRef = useRef<any>(null);
 
   // Punch Success Overlay Modal State
@@ -63,6 +54,65 @@ export default function KioskModeScreen() {
   const [punchConfidence, setPunchConfidence] = useState(0);
   const [punchOffline, setPunchOffline] = useState(false);
   const [overlayAnim] = useState(new Animated.Value(0));
+
+  // Live Frame Processing State
+  const [liveScanningActive, setLiveScanningActive] = useState(true);
+  const lastMatchRef = useRef<number>(0);
+  const isCapturingRef = useRef<boolean>(false);
+
+  // Background polling for live face matching
+  useEffect(() => {
+    let active = true;
+
+    const pollCamera = async () => {
+      if (!active || !liveScanningActive || !cameraRef.current || isCapturingRef.current || punchOverlayVisible) {
+        if (active) setTimeout(pollCamera, 1500);
+        return;
+      }
+
+      const now = Date.now();
+      if (now - lastMatchRef.current < 6000) {
+        if (active) setTimeout(pollCamera, 1500);
+        return;
+      }
+
+      isCapturingRef.current = true;
+      try {
+        const photo = await cameraRef.current.takePhoto({
+          flash: 'off',
+          enableAutoRedEyeReduction: false,
+        });
+
+        const embedding = await nativeFaceRecognition.extractFaceEmbedding(photo.path);
+
+        if (active && !punchOverlayVisible && (Date.now() - lastMatchRef.current >= 6000)) {
+          const matchResult = faceMatcherService.matchFace(
+            embedding,
+            employees,
+            settings?.distanceThreshold || 0.6
+          );
+
+          if (matchResult.employee) {
+            lastMatchRef.current = Date.now();
+            executePunchIn(matchResult.employee, matchResult.confidence);
+          }
+        }
+      } catch (e) {
+        // Ignore "NO_FACE_DETECTED" or other minor ML errors during background polling
+      } finally {
+        isCapturingRef.current = false;
+        if (active) setTimeout(pollCamera, 1500); // Poll every 1.5s
+      }
+    };
+
+    if (liveScanningActive) {
+      setTimeout(pollCamera, 2000);
+    }
+
+    return () => {
+      active = false;
+    };
+  }, [liveScanningActive, employees, settings, punchOverlayVisible]);
 
   const loadData = async () => {
     dispatch(loadSettings());
@@ -82,7 +132,7 @@ export default function KioskModeScreen() {
 
   useEffect(() => {
     loadData();
-    
+
     // Auto-reload/ping server every 15 seconds to check online status
     const interval = setInterval(async () => {
       let isOnline = false;
@@ -106,105 +156,10 @@ export default function KioskModeScreen() {
     return () => clearInterval(interval);
   }, [dispatch, offlineQueue.length]);
 
-  // Set default selected simulation employee once employees are loaded
-  useEffect(() => {
-    if (employees.length > 0 && !selectedSimEmp) {
-      setSelectedSimEmp(employees[0]);
-    }
-  }, [employees, selectedSimEmp]);
-
   // Sync Data manually
   const triggerSync = async () => {
     await dispatch(syncEmployeesFromServer()).unwrap();
     dispatch(loadLocalLogsAndQueue());
-  };
-
-  // Start laser loop
-  const startLaserScanning = () => {
-    laserAnim.setValue(0);
-    scannerLoopRef.current = Animated.loop(
-      Animated.sequence([
-        Animated.timing(laserAnim, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: false,
-        }),
-        Animated.timing(laserAnim, {
-          toValue: 0,
-          duration: 2000,
-          useNativeDriver: false,
-        }),
-      ])
-    );
-    scannerLoopRef.current.start();
-  };
-
-  const stopLaserScanning = () => {
-    if (scannerLoopRef.current) {
-      scannerLoopRef.current.stop();
-    }
-    laserAnim.setValue(0);
-  };
-
-  // Trigger secure biometric signature capture
-  const handleSimulateScan = () => {
-    if (!selectedSimEmp || scanning) return;
-
-    setScanning(true);
-    setScanningMessage('EXTRACTING LANDMARKS...');
-    startLaserScanning();
-
-    // 1. Perform face calculations and landmark extraction
-    setTimeout(() => {
-      setScanningMessage('MATCHING FACE EMBEDDINGS...');
-
-      setTimeout(async () => {
-        let faceVector: number[];
-        try {
-          if (cameraRef.current) {
-            setScanningMessage('CAPTURING BIOMETRIC FRAME...');
-            const photo = await cameraRef.current.takePhoto({
-              flash: 'off',
-              enableAutoRedEyeReduction: false,
-            });
-            setScanningMessage('EXTRACTING TENSOR SIGNATURE...');
-            faceVector = await nativeFaceRecognition.extractFaceEmbedding(photo.path);
-          } else {
-            throw new Error('Camera ref is not available.');
-          }
-        } catch (err: any) {
-          console.warn('Native face extraction failed, falling back to mock:', err);
-          faceVector = faceMatcherService.generateMockEmbeddingForName(selectedSimEmp.name);
-        }
-
-        // 2. Perform real-time Euclidean distance face matching
-        const matchResult = faceMatcherService.matchFace(
-          faceVector,
-          employees,
-          settings?.distanceThreshold || 0.6
-        );
-
-        stopLaserScanning();
-        setScanning(false);
-        setScanningMessage('ALIGN FACE TO SCAN');
-
-        if (matchResult.employee) {
-          await executePunchIn(matchResult.employee, matchResult.confidence);
-        } else {
-          // Play failed animation
-          Vibration.vibrate([0, 200]);
-          await storageService.addLocalPunchLog({
-            name: selectedSimEmp.name,
-            action: 'match_failed',
-            time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            success: false,
-            message: `Match failed (Threshold limit exceeded)`,
-          });
-          dispatch(loadLocalLogsAndQueue());
-          Alert.alert('Face match rejected: Vector distance above strict authentication threshold.');
-        }
-      }, 1200);
-    }, 1500);
   };
 
   const executePunchIn = async (employee: CachedEmployee, confidence: number) => {
@@ -400,6 +355,7 @@ export default function KioskModeScreen() {
                   style={StyleSheet.absoluteFill}
                   device={device}
                   isActive={true}
+                  photo={true}
                 />
               ) : null}
 
@@ -410,99 +366,19 @@ export default function KioskModeScreen() {
               <View style={[styles.corner, styles.bottomRight]} />
 
               {/* Holographic face guide circles */}
-              <View style={[styles.guideOval, scanning && styles.guideOvalScanning]} />
-              <View style={[styles.guideCircle, scanning && styles.guideCircleScanning]} />
-
-              {/* Scanning laser sweep */}
-              {scanning && (
-                <Animated.View
-                  style={[
-                    styles.scannerLaser,
-                    {
-                      top: laserAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: ['10%', '90%'],
-                      }),
-                    },
-                  ]}
-                />
-              )}
+              <View style={styles.guideOval} />
+              <View style={styles.guideCircle} />
 
               {/* Static overlay instructions */}
               <View style={styles.scannerPrompt}>
-                <CameraIcon color={scanning ? THEME.colors.accent : THEME.colors.textMuted} size={16} />
-                <Text style={[styles.scannerPromptText, scanning && { color: THEME.colors.accent }]}>
-                  {scanningMessage}
+                <CameraIcon color={THEME.colors.textMuted} size={16} />
+                <Text style={styles.scannerPromptText}>
+                  ALIGN FACE TO SCAN
                 </Text>
               </View>
             </View>
           </View>
 
-          {/* AI Face Recognition Controller Widget */}
-          {true && (
-            <View style={styles.simulatorCard}>
-              <View style={styles.simHeader}>
-                <Text style={styles.simTitle}>Biometric Verification Core</Text>
-              </View>
-
-              <Text style={styles.simDesc}>
-                Select employee profile to capture biometric signatures, compute Euclidean vector distance, and authenticate.
-              </Text>
-
-              {employees.length === 0 ? (
-                <View style={styles.emptyEmployeesBox}>
-                  <InfoIcon color={THEME.colors.warning} size={16} />
-                  <Text style={styles.emptyEmployeesText}>
-                    No embeddings synced yet. Go to settings or directory to download employees list.
-                  </Text>
-                </View>
-              ) : (
-                <View style={styles.simSelectorRow}>
-                  <TouchableOpacity
-                    style={styles.pickerTrigger}
-                    onPress={() => setPickerVisible(!pickerVisible)}
-                  >
-                    <Text style={styles.pickerTriggerText}>
-                      {selectedSimEmp ? selectedSimEmp.name : 'Select Profile...'}
-                    </Text>
-                    <Text style={styles.pickerTriggerArrow}>▼</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={[styles.simScanBtn, scanning && styles.btnDisabled]}
-                    onPress={handleSimulateScan}
-                    disabled={scanning}
-                  >
-                    <Text style={styles.simScanBtnText}>Authenticate Biometric Profile</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-
-              {/* Dropdown list */}
-              {pickerVisible && employees.length > 0 && (
-                <View style={styles.pickerDropdown}>
-                  <ScrollView style={styles.pickerScroll} nestedScrollEnabled>
-                    {employees.map((emp) => (
-                      <TouchableOpacity
-                        key={emp.employee_id}
-                        style={[
-                          styles.pickerItem,
-                          selectedSimEmp?.employee_id === emp.employee_id && styles.pickerItemActive,
-                        ]}
-                        onPress={() => {
-                          setSelectedSimEmp(emp);
-                          setPickerVisible(false);
-                        }}
-                      >
-                        <Text style={styles.pickerItemText}>{emp.name}</Text>
-                        <Text style={styles.pickerItemSub}>EMP ID: #{emp.employee_id}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
-            </View>
-          )}
         </View>
 
         {/* Right Pane: Stats & Local Live Feed */}
