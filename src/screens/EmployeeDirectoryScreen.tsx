@@ -152,9 +152,10 @@ export default function EmployeeDirectoryScreen() {
             throw new Error('Camera ref is not available.');
           }
         } catch (err: any) {
-          console.warn('Native extraction failed, falling back to mock vector:', err);
-          const name = selectedEmployee.name || `${selectedEmployee.first_name || ''} ${selectedEmployee.last_name || ''}`.trim() || 'Unnamed';
-          vector = faceMatcherService.generateMockEmbeddingForName(name);
+          console.warn('Native extraction failed:', err);
+          setEnrollState('failed');
+          setEnrollMessage(err?.message || 'Face extraction failed. Please try again.');
+          return; // Halt enrollment if extraction fails
         }
 
         // 4. Transition to Server Uploading

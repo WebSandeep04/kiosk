@@ -49,71 +49,26 @@ export const faceMatcherService = {
       }
     }
 
-    if (closestEmployee && minDistance <= threshold) {
-      // Convert Euclidean distance to confidence percentage.
-      // For MobileFaceNet, 0.0 distance is 100% confidence, 0.6 threshold is around 70-80% confidence.
-      // Let's use a nice scaling formula: confidence = max(0, min(100, Math.round((1 - (distance / threshold) * 0.4) * 100)))
-      // Or simply: confidence = Math.round((1 - (minDistance / 1.2)) * 100) -> 0.0 dist is 100%, 0.6 dist is 50%, etc.
-      // Let's use:
-      const confidence = Math.max(0, Math.min(100, Math.round((1 - minDistance) * 100)));
-      return {
-        employee: closestEmployee,
-        distance: minDistance,
-        confidence,
-      };
+    if (closestEmployee) {
+      // For normalized L2 embeddings, Cosine Similarity = 1 - (L2_distance ^ 2) / 2
+      // We convert this to a percentage (0 to 100).
+      const cosineSimilarity = 1 - (minDistance * minDistance) / 2;
+      const confidence = Math.max(0, Math.min(100, Math.round(cosineSimilarity * 100)));
+
+      // Only apply attendance if 90% match or higher
+      if (confidence >= 90) {
+        return {
+          employee: closestEmployee,
+          distance: minDistance,
+          confidence,
+        };
+      }
     }
 
     return {
       employee: null,
       distance: minDistance,
-      confidence: 0,
+      confidence: closestEmployee ? Math.max(0, Math.min(100, Math.round((1 - (minDistance * minDistance) / 2) * 100))) : 0,
     };
   },
-
-  /**
-   * Generate a random normalized 192-dimensional embedding
-   */
-  generateMockEmbedding(dimension: number = 192): number[] {
-    const vector: number[] = [];
-    let sumSquares = 0;
-    
-    // Generate raw values
-    for (let i = 0; i < dimension; i++) {
-      const val = Math.random() * 2 - 1; // -1 to 1
-      vector.push(val);
-      sumSquares += val * val;
-    }
-
-    // Normalize to unit length (sum of squares = 1)
-    const magnitude = Math.sqrt(sumSquares);
-    return vector.map(v => v / magnitude);
-  },
-
-  /**
-   * Generate a repeatable mock embedding for a specific string (e.g. employee name)
-   * This ensures that scanning a mockup card for "John Doe" will ALWAYS produce
-   * the exact same vector, making testing face-recognition syncing 100% reliable!
-   */
-  generateMockEmbeddingForName(name: string, dimension: number = 192): number[] {
-    // Simple deterministic hash based on name characters
-    let seed = 0;
-    for (let i = 0; i < name.length; i++) {
-      seed += name.charCodeAt(i) * (i + 1);
-    }
-
-    const vector: number[] = [];
-    let sumSquares = 0;
-
-    for (let i = 0; i < dimension; i++) {
-      // Deterministic pseudo-random number generator
-      const x = Math.sin(seed + i) * 10000;
-      const val = x - Math.floor(x); // 0 to 1
-      const centered = val * 2 - 1; // -1 to 1
-      vector.push(centered);
-      sumSquares += centered * centered;
-    }
-
-    const magnitude = Math.sqrt(sumSquares);
-    return vector.map(v => v / magnitude);
-  }
 };

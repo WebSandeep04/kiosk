@@ -59,8 +59,18 @@ export default function KioskModeScreen() {
   // Live Frame Processing State
   const [liveScanningActive, setLiveScanningActive] = useState(true);
   const [debugMessage, setDebugMessage] = useState<string>('Initializing...');
+  const [feedbackMsg, setFeedbackMsg] = useState<{ text: string, type: 'error' | 'warning' | 'info' } | null>(null);
+  const feedbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastMatchRef = useRef<number>(0);
   const isCapturingRef = useRef<boolean>(false);
+
+  const showFeedback = (text: string, type: 'error' | 'warning' | 'info') => {
+    setFeedbackMsg({ text, type });
+    if (feedbackTimeoutRef.current) clearTimeout(feedbackTimeoutRef.current);
+    feedbackTimeoutRef.current = setTimeout(() => {
+      setFeedbackMsg(null);
+    }, 3000);
+  };
 
   // Background polling for live face matching
   useEffect(() => {
@@ -106,11 +116,17 @@ export default function KioskModeScreen() {
             executePunchIn(matchResult.employee, matchResult.confidence);
           } else {
             setDebugMessage(`Match FAILED: Distance > Threshold`);
+            showFeedback('Face not recognized (Match < 90%)', 'error');
           }
         }
       } catch (e: any) {
-        // Ignore "NO_FACE_DETECTED" or other minor ML errors during background polling
-        setDebugMessage(`Error: ${e?.message || e}`);
+        const errMsg = e?.message || String(e);
+        setDebugMessage(`Error: ${errMsg}`);
+        
+        // Show user-friendly error for bad lighting/positioning, ignore NO_FACE_DETECTED completely empty frames
+        if (errMsg.includes('INVALID_FACE_BOUNDS')) {
+          showFeedback('Please center your face in the frame', 'warning');
+        }
       } finally {
         isCapturingRef.current = false;
         if (active) setTimeout(pollCamera, 1500); // Poll every 1.5s
@@ -388,6 +404,28 @@ export default function KioskModeScreen() {
                   ALIGN FACE TO SCAN
                 </Text>
               </View>
+
+              {/* User Feedback Message Overlay */}
+              {feedbackMsg && (
+                <View style={{
+                  position: 'absolute',
+                  top: '15%',
+                  backgroundColor: feedbackMsg.type === 'error' ? 'rgba(239, 68, 68, 0.9)' : 'rgba(245, 158, 11, 0.9)',
+                  paddingHorizontal: 24,
+                  paddingVertical: 12,
+                  borderRadius: 30,
+                  alignSelf: 'center',
+                  shadowColor: '#000',
+                  shadowOffset: { width: 0, height: 4 },
+                  shadowOpacity: 0.5,
+                  shadowRadius: 5,
+                  elevation: 6,
+                }}>
+                  <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 14, letterSpacing: 0.5 }}>
+                    {feedbackMsg.text}
+                  </Text>
+                </View>
+              )}
 
               <View style={{ position: 'absolute', bottom: 10, alignSelf: 'center', backgroundColor: 'rgba(0,0,0,0.6)', padding: 8, borderRadius: 8 }}>
                 <Text style={{ color: '#00FFCC', fontSize: 12, fontWeight: 'bold' }}>{debugMessage}</Text>
