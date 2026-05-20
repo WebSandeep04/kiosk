@@ -63,6 +63,8 @@ export default function KioskModeScreen() {
   const feedbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastMatchRef = useRef<number>(0);
   const isCapturingRef = useRef<boolean>(false);
+  // Multi-frame confirmation: track consecutive matches to the same employee
+  const consecutiveMatchRef = useRef<{ employeeId: number; count: number } | null>(null);
 
   const showFeedback = (text: string, type: 'error' | 'warning' | 'info') => {
     setFeedbackMsg({ text, type });
@@ -90,20 +92,35 @@ export default function KioskModeScreen() {
 
       isCapturingRef.current = true;
       try {
-        setDebugMessage('Taking photo frame...');
-        const photoFile = await photoOutput.capturePhotoToFile({
-          flashMode: 'off',
-          enableRedEyeReduction: false,
-        }, {});
+        // --- Multi-frame averaging: take 3 frames and average their embeddings ---
+        const frameEmbeddings: number[][] = [];
+        const FRAMES_TO_SAMPLE = 3;
 
-        setDebugMessage('Extracting ML embedding...');
-        if (typeof nativeFaceRecognition.extractFaceEmbedding !== 'function') {
-           throw new Error('extractFaceEmbedding is not a function');
+        for (let f = 0; f < FRAMES_TO_SAMPLE; f++) {
+          setDebugMessage(`Capturing frame ${f + 1}/${FRAMES_TO_SAMPLE}...`);
+          const photoFile = await photoOutput.capturePhotoToFile({
+            flashMode: 'off',
+            enableRedEyeReduction: false,
+          }, {});
+
+          if (typeof nativeFaceRecognition.extractFaceEmbedding !== 'function') {
+            throw new Error('extractFaceEmbedding is not a function');
+          }
+          const emb = await nativeFaceRecognition.extractFaceEmbedding(photoFile.filePath);
+          frameEmbeddings.push(emb);
+
+          // Small gap between frames so they are distinct
+          if (f < FRAMES_TO_SAMPLE - 1) {
+            await new Promise(r => setTimeout(r, 300));
+          }
         }
-        const embedding = await nativeFaceRecognition.extractFaceEmbedding(photoFile.filePath);
+
+        // Average all captured frames into one robust embedding
+        setDebugMessage('Averaging frames & matching...');
+        const embedding = faceMatcherService.averageEmbeddings(frameEmbeddings);
 
         if (active && !punchOverlayVisible && (Date.now() - lastMatchRef.current >= 6000)) {
-          setDebugMessage(`Matching face against ${employees.length} cached...`);
+          setDebugMessage(`Matching against ${employees.length} profiles...`);
           const matchResult = faceMatcherService.matchFace(
             embedding,
             employees,
@@ -111,25 +128,42 @@ export default function KioskModeScreen() {
           );
 
           if (matchResult.employee) {
-            setDebugMessage(`Match SUCCESS! ${matchResult.employee.name} (${matchResult.confidence}%)`);
-            lastMatchRef.current = Date.now();
-            executePunchIn(matchResult.employee, matchResult.confidence);
+            const empId = matchResult.employee.employee_id;
+            // Consecutive confirmation: need 2 matches to the same employee
+            if (consecutiveMatchRef.current?.employeeId === empId) {
+              consecutiveMatchRef.current.count++;
+            } else {
+              consecutiveMatchRef.current = { employeeId: empId, count: 1 };
+            }
+
+            if (consecutiveMatchRef.current.count >= 2) {
+              // Confirmed match — fire punch
+              consecutiveMatchRef.current = null;
+              setDebugMessage(`✓ CONFIRMED: ${matchResult.employee.name} (${matchResult.confidence}%)`);
+              lastMatchRef.current = Date.now();
+              executePunchIn(matchResult.employee, matchResult.confidence);
+            } else {
+              setDebugMessage(`Candidate: ${matchResult.employee.name} (${matchResult.confidence}%) — confirming...`);
+            }
           } else {
-            setDebugMessage(`Match FAILED: Distance > Threshold`);
-            showFeedback('Face not recognized (Match < 90%)', 'error');
+            // Reset consecutive counter if no match
+            consecutiveMatchRef.current = null;
+            const conf = matchResult.confidence;
+            setDebugMessage(`No match (best: ${conf}%)`);
+            if (conf > 0) {
+              showFeedback(`Face not recognized (${conf}% — need 70%+)`, 'error');
+            }
           }
         }
       } catch (e: any) {
         const errMsg = e?.message || String(e);
         setDebugMessage(`Error: ${errMsg}`);
-        
-        // Show user-friendly error for bad lighting/positioning, ignore NO_FACE_DETECTED completely empty frames
         if (errMsg.includes('INVALID_FACE_BOUNDS')) {
           showFeedback('Please center your face in the frame', 'warning');
         }
       } finally {
         isCapturingRef.current = false;
-        if (active) setTimeout(pollCamera, 1500); // Poll every 1.5s
+        if (active) setTimeout(pollCamera, 1000); // Poll every 1s
       }
     };
 

@@ -44,41 +44,71 @@ export const syncOfflineQueueAction = createAsyncThunk('logs/syncQueue', async (
   let failedCount = 0;
   const processedIds: string[] = [];
 
+  // Helper: wait for ms milliseconds
+  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
   for (const punch of queue) {
-    try {
-      const response = await apiClient.post('/kiosk/attendance/punch-in', {
-        user_id: punch.user_id,
-        confidence_match: punch.confidence_match,
-        latitude: punch.latitude,
-        longitude: punch.longitude,
-      });
+    let attempts = 0;
+    let success = false;
 
-      const data = response.data;
-      const success = response.status === 200 || response.status === 201;
-
-      if (success && data) {
-        const payload = data && typeof data === 'object' && 'data' in data ? data.data : data;
-
-        processedCount++;
-        processedIds.push(punch.id);
-        logs.push(`Successfully synced offline punch for ${punch.name} at ${punch.timestamp}`);
-
-        // Log locally
-        await storageService.addLocalPunchLog({
-          name: punch.name,
-          action: payload.action || 'synced_offline',
-          time: new Date(punch.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          success: true,
-          message: `Synced Offline (ID: ${punch.user_id})`,
+    while (attempts < 3 && !success) {
+      attempts++;
+      try {
+        const response = await apiClient.post('/kiosk/attendance/punch-in', {
+          user_id: punch.user_id,
+          confidence_match: punch.confidence_match,
+          latitude: punch.latitude,
+          longitude: punch.longitude,
         });
-      } else {
-        failedCount++;
-        logs.push(`Failed to sync offline punch for ${punch.name}: Connection issue.`);
+
+        const data = response.data;
+        const ok = response.status === 200 || response.status === 201;
+
+        if (ok && data) {
+          const payload = data && typeof data === 'object' && 'data' in data ? data.data : data;
+          processedCount++;
+          processedIds.push(punch.id);
+          success = true;
+          logs.push(`✓ Synced: ${punch.name} at ${new Date(punch.timestamp).toLocaleTimeString()}`);
+
+          // Log locally
+          await storageService.addLocalPunchLog({
+            name: punch.name,
+            action: payload.action || 'synced_offline',
+            time: new Date(punch.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            success: true,
+            message: `Synced Offline (ID: ${punch.user_id})`,
+          });
+        } else {
+          // Non-429 server error — don't retry
+          failedCount++;
+          logs.push(`✗ Failed: ${punch.name} — Server rejected (status ${response.status})`);
+          break;
+        }
+      } catch (err: any) {
+        const status = err.response?.status;
+        if (status === 429) {
+          // 429 from kiosk endpoint = duplicate punch guard (same employee punched within 2 min).
+          // This is a business rejection, NOT a network rate limit. Mark as processed & remove from queue.
+          processedIds.push(punch.id);
+          success = true;
+          logs.push(`⚠ Skipped: ${punch.name} — Already punched recently (duplicate guard)`);
+        } else {
+          // Other error — don't retry
+          failedCount++;
+          logs.push(`✗ Error: ${punch.name} — ${err.response?.data?.message || err.message || 'Unknown error'}`);
+          break;
+        }
       }
-    } catch (err: any) {
-      failedCount++;
-      logs.push(`Error syncing offline punch for ${punch.name}: ${err.message || err}`);
     }
+
+    if (!success && attempts >= 3) {
+      failedCount++;
+      logs.push(`✗ Gave up: ${punch.name} — Too many rate limit retries`);
+    }
+
+    // Small delay between punches to avoid connection stacking
+    await delay(1000);
   }
 
   if (processedIds.length > 0) {
