@@ -71,9 +71,9 @@ export const faceMatcherService = {
   },
 
   /**
-   * Generate a random normalized 128-dimensional embedding
+   * Generate a random normalized 192-dimensional embedding
    */
-  generateMockEmbedding(dimension: number = 128): number[] {
+  generateMockEmbedding(dimension: number = 192): number[] {
     const vector: number[] = [];
     let sumSquares = 0;
     
@@ -94,7 +94,7 @@ export const faceMatcherService = {
    * This ensures that scanning a mockup card for "John Doe" will ALWAYS produce
    * the exact same vector, making testing face-recognition syncing 100% reliable!
    */
-  generateMockEmbeddingForName(name: string, dimension: number = 128): number[] {
+  generateMockEmbeddingForName(name: string, dimension: number = 192): number[] {
     // Simple deterministic hash based on name characters
     let seed = 0;
     for (let i = 0; i < name.length; i++) {

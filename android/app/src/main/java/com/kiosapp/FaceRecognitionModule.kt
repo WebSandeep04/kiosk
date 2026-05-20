@@ -131,18 +131,18 @@ class FaceRecognitionModule(reactContext: ReactApplicationContext) : ReactContex
                     }
 
                     // 6. Run TensorFlow Lite Inference
-                    val outputArray = Array(1) { FloatArray(128) }
+                    val outputArray = Array(1) { FloatArray(192) }
                     getInterpreter().run(byteBuffer, outputArray)
 
                     val rawEmbedding = outputArray[0]
 
-                    // 7. L2 Normalize the 128-float output vector mathematically to unit length
+                    // 7. L2 Normalize the 192-float output vector mathematically to unit length
                     var sumSquares = 0.0f
                     for (v in rawEmbedding) {
                         sumSquares += v * v
                     }
                     val magnitude = Math.sqrt(sumSquares.toDouble()).toFloat()
-                    val normalizedEmbedding = FloatArray(128)
+                    val normalizedEmbedding = FloatArray(192)
                     for (i in rawEmbedding.indices) {
                         normalizedEmbedding[i] = if (magnitude > 0.0f) rawEmbedding[i] / magnitude else 0.0f
                     }

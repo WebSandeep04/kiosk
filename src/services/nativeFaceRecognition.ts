@@ -4,7 +4,7 @@ const { FaceRecognitionModule } = NativeModules;
 
 export const nativeFaceRecognition = {
   /**
-   * Extract high-precision 128-dimensional unit vector embedding from a local image path
+   * Extract high-precision 192-dimensional unit vector embedding from a local image path
    * via ML Kit Face Detection + MobileFaceNet TFLite Inference.
    */
   async extractFaceEmbedding(imageUriString: string): Promise<number[]> {

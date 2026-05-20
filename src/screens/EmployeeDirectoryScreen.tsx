@@ -12,7 +12,7 @@ import {
   Animated,
   Image,
 } from 'react-native';
-import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
+import { Camera, useCameraDevice, useCameraPermission, usePhotoOutput } from 'react-native-vision-camera';
 import { THEME } from '../constants/theme';
 import { storageService, CachedEmployee } from '../services/storage';
 import { apiService } from '../services/api';
@@ -26,6 +26,7 @@ import { loadSettings } from '../store/settingsSlice';
 export default function EmployeeDirectoryScreen() {
   const dispatch = useAppDispatch();
   const cameraRef = useRef<any>(null);
+  const photoOutput = usePhotoOutput();
   const { list: employees, syncing: reduxSyncing } = useAppSelector((state) => state.employees);
 
   const [allBackendEmployees, setAllBackendEmployees] = useState<any[]>([]); // Includes un-enrolled
@@ -142,11 +143,11 @@ export default function EmployeeDirectoryScreen() {
         try {
           if (cameraRef.current) {
             setEnrollMessage('Extracting biometric signature...');
-            const photo = await cameraRef.current.takePhoto({
-              flash: 'off',
-              enableAutoRedEyeReduction: false,
-            });
-            vector = await nativeFaceRecognition.extractFaceEmbedding(photo.path);
+            const photoFile = await photoOutput.capturePhotoToFile({
+              flashMode: 'off',
+              enableRedEyeReduction: false,
+            }, {});
+            vector = await nativeFaceRecognition.extractFaceEmbedding(photoFile.filePath);
           } else {
             throw new Error('Camera ref is not available.');
           }
@@ -330,6 +331,7 @@ export default function EmployeeDirectoryScreen() {
                       style={StyleSheet.absoluteFill}
                       device={device}
                       isActive={enrollModalVisible}
+                      outputs={[photoOutput]}
                     />
                   ) : null}
 

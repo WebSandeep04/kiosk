@@ -12,7 +12,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
+import { Camera, useCameraDevice, useCameraPermission, usePhotoOutput } from 'react-native-vision-camera';
 import { THEME } from '../constants/theme';
 import { storageService, KioskSettings, CachedEmployee } from '../services/storage';
 import { apiService, apiClient } from '../services/api';
@@ -45,6 +45,7 @@ export default function KioskModeScreen() {
   }, [hasPermission]);
 
   const cameraRef = useRef<any>(null);
+  const photoOutput = usePhotoOutput();
 
   // Punch Success Overlay Modal State
   const [punchOverlayVisible, setPunchOverlayVisible] = useState(false);
@@ -57,6 +58,7 @@ export default function KioskModeScreen() {
 
   // Live Frame Processing State
   const [liveScanningActive, setLiveScanningActive] = useState(true);
+  const [debugMessage, setDebugMessage] = useState<string>('Initializing...');
   const lastMatchRef = useRef<number>(0);
   const isCapturingRef = useRef<boolean>(false);
 
@@ -78,14 +80,20 @@ export default function KioskModeScreen() {
 
       isCapturingRef.current = true;
       try {
-        const photo = await cameraRef.current.takePhoto({
-          flash: 'off',
-          enableAutoRedEyeReduction: false,
-        });
+        setDebugMessage('Taking photo frame...');
+        const photoFile = await photoOutput.capturePhotoToFile({
+          flashMode: 'off',
+          enableRedEyeReduction: false,
+        }, {});
 
-        const embedding = await nativeFaceRecognition.extractFaceEmbedding(photo.path);
+        setDebugMessage('Extracting ML embedding...');
+        if (typeof nativeFaceRecognition.extractFaceEmbedding !== 'function') {
+           throw new Error('extractFaceEmbedding is not a function');
+        }
+        const embedding = await nativeFaceRecognition.extractFaceEmbedding(photoFile.filePath);
 
         if (active && !punchOverlayVisible && (Date.now() - lastMatchRef.current >= 6000)) {
+          setDebugMessage(`Matching face against ${employees.length} cached...`);
           const matchResult = faceMatcherService.matchFace(
             embedding,
             employees,
@@ -93,12 +101,16 @@ export default function KioskModeScreen() {
           );
 
           if (matchResult.employee) {
+            setDebugMessage(`Match SUCCESS! ${matchResult.employee.name} (${matchResult.confidence}%)`);
             lastMatchRef.current = Date.now();
             executePunchIn(matchResult.employee, matchResult.confidence);
+          } else {
+            setDebugMessage(`Match FAILED: Distance > Threshold`);
           }
         }
-      } catch (e) {
+      } catch (e: any) {
         // Ignore "NO_FACE_DETECTED" or other minor ML errors during background polling
+        setDebugMessage(`Error: ${e?.message || e}`);
       } finally {
         isCapturingRef.current = false;
         if (active) setTimeout(pollCamera, 1500); // Poll every 1.5s
@@ -355,7 +367,7 @@ export default function KioskModeScreen() {
                   style={StyleSheet.absoluteFill}
                   device={device}
                   isActive={true}
-                  photo={true}
+                  outputs={[photoOutput]}
                 />
               ) : null}
 
@@ -375,6 +387,10 @@ export default function KioskModeScreen() {
                 <Text style={styles.scannerPromptText}>
                   ALIGN FACE TO SCAN
                 </Text>
+              </View>
+
+              <View style={{ position: 'absolute', bottom: 10, alignSelf: 'center', backgroundColor: 'rgba(0,0,0,0.6)', padding: 8, borderRadius: 8 }}>
+                <Text style={{ color: '#00FFCC', fontSize: 12, fontWeight: 'bold' }}>{debugMessage}</Text>
               </View>
             </View>
           </View>
