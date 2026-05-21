@@ -25,18 +25,16 @@ interface ServerSetupScreenProps {
 
 export default function ServerSetupScreen({ onSetupComplete }: ServerSetupScreenProps) {
   const dispatch = useDispatch<any>();
-  const [tenantCode, setTenantCode] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [saving, setSaving] = useState(false);
 
   const handleSaveAndProceed = async () => {
-    const trimmedTenant = tenantCode.trim();
     const trimmedEmail = email.trim();
     const trimmedPassword = password.trim();
 
-    if (!trimmedTenant || !trimmedEmail || !trimmedPassword) {
-      Alert.alert('Validation Error', 'Please enter all Tenant Login details.');
+    if (!trimmedEmail || !trimmedPassword) {
+      Alert.alert('Validation Error', 'Please enter all Login details.');
       return;
     }
 
@@ -45,7 +43,6 @@ export default function ServerSetupScreen({ onSetupComplete }: ServerSetupScreen
     try {
       // 1. Direct Kiosk Authentication Check (Dispatches the proper slice action)
       await dispatch(kioskLoginAction({
-        tenantCode: trimmedTenant,
         email: trimmedEmail,
         password: trimmedPassword
       })).unwrap();
@@ -83,27 +80,7 @@ export default function ServerSetupScreen({ onSetupComplete }: ServerSetupScreen
             Connect this terminal to the Workorio production network. Credentials will be securely verified inside your isolated tenant database in real-time.
           </Text>
 
-          {/* 1. Tenant ID / Code */}
-          <View style={styles.inputGroup}>
-            <View style={styles.inputLabelContainer}>
-              <KeyIcon color={THEME.colors.accent} size={16} />
-              <Text style={styles.inputLabel}>Tenant Code / Database ID</Text>
-            </View>
-            <TextInput
-              style={styles.input}
-              value={tenantCode}
-              onChangeText={setTenantCode}
-              placeholder="e.g., TEN-XXXXXX or database ID"
-              placeholderTextColor={THEME.colors.textMuted}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            <Text style={styles.helpText}>
-              Enter your master tenant code or numeric tenant connection ID.
-            </Text>
-          </View>
-
-          {/* 2. Email */}
+          {/* 1. Email */}
           <View style={styles.inputGroup}>
             <View style={styles.inputLabelContainer}>
               <UsersIcon color={THEME.colors.accent} size={16} />

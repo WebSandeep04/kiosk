@@ -20,7 +20,6 @@ const initialState: AuthState = {
 };
 
 interface KioskLoginPayload {
-  tenantCode: string;
   email: string;
   password: string;
 }
@@ -29,14 +28,13 @@ interface KioskLoginPayload {
 export const kioskLoginAction = createAsyncThunk(
   'auth/kioskLogin',
   async (credentials: KioskLoginPayload, { rejectWithValue }) => {
-    const { tenantCode, email, password } = credentials;
+    const { email, password } = credentials;
     try {
-      if (!tenantCode || !email || !password) {
-        return rejectWithValue('Tenant Code, Email, and Password are required.');
+      if (!email || !password) {
+        return rejectWithValue('Email and Password are required.');
       }
 
       const response = await axios.post(`${GATEWAY_URL}/kiosk/login`, {
-        tenant_code: tenantCode,
         email,
         password,
       }, {
@@ -65,7 +63,7 @@ export const kioskLoginAction = createAsyncThunk(
       return rejectWithValue(response.data?.message || 'Authentication failed.');
     } catch (err: any) {
       if (err.response?.status === 401 || err.response?.status === 422 || err.response?.status === 404) {
-        return rejectWithValue(err.response.data?.message || 'Invalid credentials or tenant code.');
+        return rejectWithValue(err.response.data?.message || 'Invalid credentials.');
       }
       const errMsg = err.response?.data?.message || err.message || 'Failed to reach server.';
       return rejectWithValue(`Connection Error: ${errMsg}`);
