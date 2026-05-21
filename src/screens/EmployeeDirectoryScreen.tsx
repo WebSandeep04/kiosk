@@ -136,7 +136,7 @@ export default function EmployeeDirectoryScreen() {
     }).start(async () => {
       // 2. Transition to Feature Extraction
       setEnrollState('extracting');
-      setEnrollMessage('Extracting 128-dimensional float embedding...');
+      setEnrollMessage('Extracting 192-dimensional float embedding...');
 
       setTimeout(async () => {
         let vector: number[];

@@ -1,4 +1,6 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import SQLite, { SQLiteDatabase } from 'react-native-sqlite-storage';
+
+SQLite.enablePromise(true);
 
 export interface CachedEmployee {
   employee_id: number;
@@ -28,32 +30,69 @@ export interface KioskSettings {
   longitude: number | null;
 }
 
-const KEYS = {
-  SETTINGS: 'kiosk_settings',
-  EMPLOYEES: 'kiosk_employees',
-  OFFLINE_QUEUE: 'kiosk_offline_queue',
-  PUNCH_LOGS: 'kiosk_punch_logs', // For local history display
-};
-
 const DEFAULT_SETTINGS: KioskSettings = {
-  serverUrl: '', // Initial blank slate
+  serverUrl: '', 
   authToken: '',
   tenantId: '',
-  distanceThreshold: 0.6, // Euclidean threshold
+  distanceThreshold: 0.6, 
   cameraSelected: 'front',
-  isSimulatorMode: true, // Default to true so it works out of the box in emulator without native camera crash
-  latitude: 26.8467, // Default coordinates (e.g. Lucknow)
+  isSimulatorMode: true, 
+  latitude: 26.8467, 
   longitude: 80.9462,
 };
 
+let db: SQLiteDatabase | null = null;
+
 export const storageService = {
+  async initDB(): Promise<void> {
+    if (db) return;
+    try {
+      db = await SQLite.openDatabase({ name: 'kiosk.db', location: 'default' });
+
+      await db.transaction(tx => {
+        // Settings table (key, value)
+        tx.executeSql(
+          'CREATE TABLE IF NOT EXISTS settings (id INTEGER PRIMARY KEY AUTOINCREMENT, key TEXT UNIQUE, value TEXT);'
+        );
+        // Employees table
+        tx.executeSql(
+          'CREATE TABLE IF NOT EXISTS employees (employee_id INTEGER PRIMARY KEY, user_id INTEGER, name TEXT, embeddings TEXT);'
+        );
+        // Offline Queue table
+        tx.executeSql(
+          'CREATE TABLE IF NOT EXISTS offline_queue (id TEXT PRIMARY KEY, user_id INTEGER, name TEXT, confidence_match REAL, latitude REAL, longitude REAL, timestamp TEXT);'
+        );
+        // Punch Logs table
+        tx.executeSql(
+          'CREATE TABLE IF NOT EXISTS punch_logs (id TEXT PRIMARY KEY, name TEXT, action TEXT, time TEXT, success INTEGER, offline INTEGER, message TEXT, timestamp TEXT);'
+        );
+      });
+    } catch (error) {
+      console.error('Failed to initialize SQLite DB:', error);
+      throw error;
+    }
+  },
+
+  async _getDB(): Promise<SQLiteDatabase> {
+    if (!db) await this.initDB();
+    return db!;
+  },
+
   /**
    * Save Kiosk Settings
    */
   async saveSettings(settings: Partial<KioskSettings>): Promise<KioskSettings> {
     const current = await this.getSettings();
     const updated = { ...current, ...settings };
-    await AsyncStorage.setItem(KEYS.SETTINGS, JSON.stringify(updated));
+    const database = await this._getDB();
+    
+    await database.transaction(tx => {
+      tx.executeSql(
+        'INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?);',
+        ['KIOSK_SETTINGS', JSON.stringify(updated)]
+      );
+    });
+    
     return updated;
   },
 
@@ -61,33 +100,77 @@ export const storageService = {
    * Get Kiosk Settings
    */
   async getSettings(): Promise<KioskSettings> {
-    const data = await AsyncStorage.getItem(KEYS.SETTINGS);
-    if (!data) return DEFAULT_SETTINGS;
-    try {
-      return { ...DEFAULT_SETTINGS, ...JSON.parse(data) };
-    } catch {
-      return DEFAULT_SETTINGS;
-    }
+    const database = await this._getDB();
+    return new Promise((resolve) => {
+      database.transaction(tx => {
+        tx.executeSql(
+          'SELECT value FROM settings WHERE key = ?;',
+          ['KIOSK_SETTINGS'],
+          (_, results) => {
+            if (results.rows.length > 0) {
+              try {
+                const parsed = JSON.parse(results.rows.item(0).value);
+                resolve({ ...DEFAULT_SETTINGS, ...parsed });
+              } catch {
+                resolve(DEFAULT_SETTINGS);
+              }
+            } else {
+              resolve(DEFAULT_SETTINGS);
+            }
+          }
+        );
+      });
+    });
   },
 
   /**
    * Cache Synced Employee Embeddings
    */
   async saveEmployees(employees: CachedEmployee[]): Promise<void> {
-    await AsyncStorage.setItem(KEYS.EMPLOYEES, JSON.stringify(employees));
+    const database = await this._getDB();
+    await database.transaction(tx => {
+      // Clear existing records
+      tx.executeSql('DELETE FROM employees;');
+      // Insert new records
+      for (const emp of employees) {
+        tx.executeSql(
+          'INSERT INTO employees (employee_id, user_id, name, embeddings) VALUES (?, ?, ?, ?);',
+          [emp.employee_id, emp.user_id, emp.name, JSON.stringify(emp.embeddings)]
+        );
+      }
+    });
   },
 
   /**
    * Get Cached Employee Embeddings
    */
   async getEmployees(): Promise<CachedEmployee[]> {
-    const data = await AsyncStorage.getItem(KEYS.EMPLOYEES);
-    if (!data) return [];
-    try {
-      return JSON.parse(data);
-    } catch {
-      return [];
-    }
+    const database = await this._getDB();
+    return new Promise((resolve) => {
+      database.transaction(tx => {
+        tx.executeSql(
+          'SELECT * FROM employees;',
+          [],
+          (_, results) => {
+            const employees: CachedEmployee[] = [];
+            for (let i = 0; i < results.rows.length; i++) {
+              const row = results.rows.item(i);
+              try {
+                employees.push({
+                  employee_id: row.employee_id,
+                  user_id: row.user_id,
+                  name: row.name,
+                  embeddings: JSON.parse(row.embeddings),
+                });
+              } catch (e) {
+                // Ignore parsing errors for individual rows
+              }
+            }
+            resolve(employees);
+          }
+        );
+      });
+    });
   },
 
   /**
@@ -100,9 +183,13 @@ export const storageService = {
       timestamp: new Date().toISOString(),
     };
 
-    const queue = await this.getOfflineQueue();
-    queue.push(newPunch);
-    await AsyncStorage.setItem(KEYS.OFFLINE_QUEUE, JSON.stringify(queue));
+    const database = await this._getDB();
+    await database.transaction(tx => {
+      tx.executeSql(
+        'INSERT INTO offline_queue (id, user_id, name, confidence_match, latitude, longitude, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?);',
+        [newPunch.id, newPunch.user_id, newPunch.name, newPunch.confidence_match, newPunch.latitude, newPunch.longitude, newPunch.timestamp]
+      );
+    });
     
     // Also save to local log history
     await this.addLocalPunchLog({
@@ -120,35 +207,68 @@ export const storageService = {
    * Get Offline Punch Queue
    */
   async getOfflineQueue(): Promise<OfflinePunch[]> {
-    const data = await AsyncStorage.getItem(KEYS.OFFLINE_QUEUE);
-    if (!data) return [];
-    try {
-      return JSON.parse(data);
-    } catch {
-      return [];
-    }
+    const database = await this._getDB();
+    return new Promise((resolve) => {
+      database.transaction(tx => {
+        tx.executeSql(
+          'SELECT * FROM offline_queue ORDER BY timestamp ASC;',
+          [],
+          (_, results) => {
+            const queue: OfflinePunch[] = [];
+            for (let i = 0; i < results.rows.length; i++) {
+              queue.push(results.rows.item(i));
+            }
+            resolve(queue);
+          }
+        );
+      });
+    });
   },
 
   /**
    * Clear processed punches from offline queue
    */
   async removeOfflinePunches(idsToRemove: string[]): Promise<void> {
-    const queue = await this.getOfflineQueue();
-    const filtered = queue.filter(item => !idsToRemove.includes(item.id));
-    await AsyncStorage.setItem(KEYS.OFFLINE_QUEUE, JSON.stringify(filtered));
+    if (idsToRemove.length === 0) return;
+    const database = await this._getDB();
+    
+    // Create placeholders: ?, ?, ?
+    const placeholders = idsToRemove.map(() => '?').join(',');
+    
+    await database.transaction(tx => {
+      tx.executeSql(
+        `DELETE FROM offline_queue WHERE id IN (${placeholders});`,
+        idsToRemove
+      );
+    });
   },
 
   /**
    * Fetch local screen punch history
    */
   async getLocalPunchLogs(): Promise<any[]> {
-    const data = await AsyncStorage.getItem(KEYS.PUNCH_LOGS);
-    if (!data) return [];
-    try {
-      return JSON.parse(data);
-    } catch {
-      return [];
-    }
+    const database = await this._getDB();
+    return new Promise((resolve) => {
+      database.transaction(tx => {
+        // Limit to 20 logs as original logic
+        tx.executeSql(
+          'SELECT * FROM punch_logs ORDER BY timestamp DESC LIMIT 20;',
+          [],
+          (_, results) => {
+            const logs: any[] = [];
+            for (let i = 0; i < results.rows.length; i++) {
+              const row = results.rows.item(i);
+              logs.push({
+                ...row,
+                success: row.success === 1,
+                offline: row.offline === 1
+              });
+            }
+            resolve(logs);
+          }
+        );
+      });
+    });
   },
 
   /**
@@ -162,28 +282,54 @@ export const storageService = {
     offline?: boolean;
     message?: string;
   }): Promise<void> {
-    const logs = await this.getLocalPunchLogs();
-    const newLog = {
-      id: Math.random().toString(36).substring(2, 9),
-      ...logItem,
-      timestamp: new Date().toISOString(),
-    };
-    // Keep only last 20 logs for visual history
-    const updated = [newLog, ...logs].slice(0, 20);
-    await AsyncStorage.setItem(KEYS.PUNCH_LOGS, JSON.stringify(updated));
+    const database = await this._getDB();
+    const id = Math.random().toString(36).substring(2, 9);
+    const timestamp = new Date().toISOString();
+    
+    await database.transaction(tx => {
+      tx.executeSql(
+        'INSERT INTO punch_logs (id, name, action, time, success, offline, message, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?, ?);',
+        [
+          id, 
+          logItem.name, 
+          logItem.action, 
+          logItem.time, 
+          logItem.success ? 1 : 0, 
+          logItem.offline ? 1 : 0, 
+          logItem.message || null, 
+          timestamp
+        ]
+      );
+      
+      // Clean up old logs to keep only last 20
+      tx.executeSql(
+        `DELETE FROM punch_logs WHERE id NOT IN (
+          SELECT id FROM punch_logs ORDER BY timestamp DESC LIMIT 20
+        );`
+      );
+    });
   },
 
   /**
    * Clear local visual logs
    */
   async clearLocalPunchLogs(): Promise<void> {
-    await AsyncStorage.removeItem(KEYS.PUNCH_LOGS);
+    const database = await this._getDB();
+    await database.transaction(tx => {
+      tx.executeSql('DELETE FROM punch_logs;');
+    });
   },
 
   /**
-   * Factory Reset: Clear all AsyncStorage data
+   * Factory Reset: Clear all SQLite data tables
    */
   async clearAll(): Promise<void> {
-    await AsyncStorage.clear();
+    const database = await this._getDB();
+    await database.transaction(tx => {
+      tx.executeSql('DELETE FROM settings;');
+      tx.executeSql('DELETE FROM employees;');
+      tx.executeSql('DELETE FROM offline_queue;');
+      tx.executeSql('DELETE FROM punch_logs;');
+    });
   }
 };
