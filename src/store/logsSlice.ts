@@ -71,14 +71,8 @@ export const syncOfflineQueueAction = createAsyncThunk('logs/syncQueue', async (
           success = true;
           logs.push(`✓ Synced: ${punch.name} at ${new Date(punch.timestamp).toLocaleTimeString()}`);
 
-          // Log locally
-          await storageService.addLocalPunchLog({
-            name: punch.name,
-            action: payload.action || 'synced_offline',
-            time: new Date(punch.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            success: true,
-            message: `Synced Offline (ID: ${punch.user_id})`,
-          });
+          // Update local log to switch from QUEUED to IN/OUT
+          await storageService.markOfflineLogAsSynced(punch.name, payload.action || 'in');
         } else {
           // Non-429 server error — don't retry
           failedCount++;

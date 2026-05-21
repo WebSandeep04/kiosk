@@ -28,6 +28,7 @@ export interface KioskSettings {
   isSimulatorMode: boolean;
   latitude: number | null;
   longitude: number | null;
+  adminPin?: string;
 }
 
 const DEFAULT_SETTINGS: KioskSettings = {
@@ -39,6 +40,7 @@ const DEFAULT_SETTINGS: KioskSettings = {
   isSimulatorMode: true, 
   latitude: 26.8467, 
   longitude: 80.9462,
+  adminPin: '',
 };
 
 let db: SQLiteDatabase | null = null;
@@ -187,7 +189,17 @@ export const storageService = {
     await database.transaction(tx => {
       tx.executeSql(
         'INSERT INTO offline_queue (id, user_id, name, confidence_match, latitude, longitude, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?);',
-        [newPunch.id, newPunch.user_id, newPunch.name, newPunch.confidence_match, newPunch.latitude, newPunch.longitude, newPunch.timestamp]
+        [
+          newPunch.id, 
+          newPunch.user_id, 
+          newPunch.name, 
+          newPunch.confidence_match, 
+          newPunch.latitude === null ? 0 : newPunch.latitude, 
+          newPunch.longitude === null ? 0 : newPunch.longitude, 
+          newPunch.timestamp
+        ],
+        () => {},
+        (_, err) => { console.error('Failed to insert offline punch', err); return false; }
       );
     });
     
@@ -306,6 +318,19 @@ export const storageService = {
         `DELETE FROM punch_logs WHERE id NOT IN (
           SELECT id FROM punch_logs ORDER BY timestamp DESC LIMIT 20
         );`
+      );
+    });
+  },
+
+  /**
+   * Update an offline queued log to show as synced (e.g., 'in' or 'out')
+   */
+  async markOfflineLogAsSynced(name: string, newAction: string): Promise<void> {
+    const database = await this._getDB();
+    await database.transaction(tx => {
+      tx.executeSql(
+        `UPDATE punch_logs SET action = ?, message = 'Edge Verified (Synced)' WHERE name = ? AND action = 'offline_queued';`,
+        [newAction, name]
       );
     });
   },

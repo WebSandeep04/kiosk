@@ -18,6 +18,7 @@ import { GATEWAY_URL } from '../services/api';
 import { KeyIcon, UsersIcon } from '../components/Icons';
 import { syncEmployeesFromServer } from '../store/employeesSlice';
 import { kioskLoginAction } from '../store/authSlice';
+import { updateSettings } from '../store/settingsSlice';
 
 interface ServerSetupScreenProps {
   onSetupComplete: () => void;
@@ -27,6 +28,7 @@ export default function ServerSetupScreen({ onSetupComplete }: ServerSetupScreen
   const dispatch = useDispatch<any>();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [adminPin, setAdminPin] = useState('');
   const [saving, setSaving] = useState(false);
 
   const handleSaveAndProceed = async () => {
@@ -38,6 +40,12 @@ export default function ServerSetupScreen({ onSetupComplete }: ServerSetupScreen
       return;
     }
 
+    const trimmedPin = adminPin.trim();
+    if (trimmedPin.length !== 4 || !/^\d+$/.test(trimmedPin)) {
+      Alert.alert('Validation Error', 'Admin PIN must be exactly 4 digits.');
+      return;
+    }
+
     setSaving(true);
 
     try {
@@ -46,6 +54,9 @@ export default function ServerSetupScreen({ onSetupComplete }: ServerSetupScreen
         email: trimmedEmail,
         password: trimmedPassword
       })).unwrap();
+
+      // Save the Admin PIN to local settings
+      await dispatch(updateSettings({ adminPin: trimmedPin })).unwrap();
 
       // 2. Perform initial background sync of employee biometric vectors
       try {
@@ -114,6 +125,25 @@ export default function ServerSetupScreen({ onSetupComplete }: ServerSetupScreen
               autoCapitalize="none"
               autoCorrect={false}
             />
+          </View>
+
+          {/* Admin PIN */}
+          <View style={styles.inputGroup}>
+            <View style={styles.inputLabelContainer}>
+              <KeyIcon color={THEME.colors.accent} size={16} />
+              <Text style={styles.inputLabel}>Create Kiosk Admin PIN</Text>
+            </View>
+            <TextInput
+              style={styles.input}
+              value={adminPin}
+              onChangeText={setAdminPin}
+              placeholder="4-digit PIN (e.g. 1234)"
+              placeholderTextColor={THEME.colors.textMuted}
+              keyboardType="number-pad"
+              secureTextEntry
+              maxLength={4}
+            />
+            <Text style={styles.helpText}>This PIN is required to access Settings and Employees tabs.</Text>
           </View>
 
           <TouchableOpacity

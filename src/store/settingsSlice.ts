@@ -11,6 +11,7 @@ export interface SettingsState {
   longitude: number | null;
   loading: boolean;
   error: string | null;
+  adminPin: string | null;
 }
 
 const initialState: SettingsState = {
@@ -23,6 +24,7 @@ const initialState: SettingsState = {
   longitude: null,
   loading: false,
   error: null,
+  adminPin: null,
 };
 
 // Async thunks for storage interactions
@@ -59,6 +61,7 @@ const settingsSlice = createSlice({
         state.isSimulatorMode = action.payload.isSimulatorMode ?? true;
         state.latitude = action.payload.latitude ?? null;
         state.longitude = action.payload.longitude ?? null;
+        state.adminPin = action.payload.adminPin || null;
       })
       .addCase(loadSettings.rejected, (state, action) => {
         state.loading = false;
@@ -79,6 +82,7 @@ const settingsSlice = createSlice({
         }
         if (action.payload.latitude !== undefined) state.latitude = action.payload.latitude;
         if (action.payload.longitude !== undefined) state.longitude = action.payload.longitude;
+        if (action.payload.adminPin !== undefined) state.adminPin = action.payload.adminPin;
       });
   },
 });
