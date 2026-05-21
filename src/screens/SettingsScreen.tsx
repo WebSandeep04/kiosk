@@ -219,7 +219,7 @@ export default function SettingsScreen({ onLogout }: SettingsScreenProps) {
         </View>
       </View>
 
-      <Text style={styles.versionText}>Edge Kiosk Engine v1.0.0 • Connected to Laravel Gateway</Text>
+      <Text style={styles.versionText}>Edge Kiosk Engine v1.0.0 • Connected to Magnify</Text>
     </ScrollView>
   );
 }
@@ -390,7 +390,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   syncBtn: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(0,0,0,0.05)',
     borderWidth: 1,
     borderColor: THEME.colors.border,
     borderRadius: THEME.radius.md,
@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
     marginTop: THEME.spacing.xs,
   },
   actionBtn: {
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: 'rgba(0,0,0,0.03)',
     borderWidth: 1,
     borderColor: THEME.colors.border,
     borderRadius: THEME.radius.md,

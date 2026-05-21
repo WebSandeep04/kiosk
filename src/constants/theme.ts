@@ -1,14 +1,14 @@
 export const THEME = {
   colors: {
-    background: '#0a0d14',     // Deep space dark gray
-    surface: '#111420',        // Dark card background
-    surfaceGlass: 'rgba(20, 24, 38, 0.75)', // Semitransparent glass card
-    border: '#1f2438',          // Deep border color
-    borderGlass: 'rgba(99, 102, 241, 0.15)', // Neon glow glass border
+    background: '#FFFFFF',     // Crisp white background
+    surface: '#F9FAFB',        // Light gray card background
+    surfaceGlass: 'rgba(255, 255, 255, 0.85)', // Semitransparent white
+    border: '#E5E7EB',          // Light gray border
+    borderGlass: 'rgba(67, 74, 250, 0.15)', // Neon glow glass border (soft primary)
     
-    primary: '#6366f1',         // Indigo glow
-    primaryLight: '#818cf8',    // Soft indigo
-    accent: '#06b6d4',          // Cyber cyan
+    primary: '#434afa',         // Brand Primary Blue
+    primaryLight: '#7c81fc',    // Soft primary
+    accent: '#434afa',          // Keep accent same as primary to match request
     
     success: '#10b981',         // Emerald green
     successGlass: 'rgba(16, 185, 129, 0.15)',
@@ -19,24 +19,24 @@ export const THEME = {
     danger: '#ef4444',          // Cyber crimson
     dangerGlass: 'rgba(239, 68, 68, 0.15)',
     
-    text: '#f3f4f6',            // Crisp off-white
-    textMuted: '#9ca3af',       // Cool slate gray
-    textSecondary: '#cbd5e1',   // Mid slate gray
+    text: '#111827',            // Dark gray text
+    textMuted: '#6b7280',       // Muted gray
+    textSecondary: '#4b5563',   // Mid slate gray
   },
   radius: {
-    sm: 6,
-    md: 12,
-    lg: 20,
-    xl: 28,
+    sm: 0,
+    md: 0,
+    lg: 0,
+    xl: 0,
     round: 9999,
   },
   spacing: {
     xs: 4,
-    sm: 8,
-    md: 16,
-    lg: 24,
-    xl: 32,
-    xxl: 40,
+    sm: 6,
+    md: 12,
+    lg: 18,
+    xl: 24,
+    xxl: 30,
   },
   fonts: {
     mono: 'Courier New',

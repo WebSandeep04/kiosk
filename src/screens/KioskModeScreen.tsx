@@ -266,7 +266,7 @@ export default function KioskModeScreen() {
           message: 'Server rejected punch-in.',
         });
         dispatch(loadLocalLogsAndQueue());
-        Alert.alert('Error', 'Punch rejected by Laravel gateway.');
+        Alert.alert('Error', 'Punch rejected by Magnify.');
         return;
       }
     } catch (err: any) {
@@ -397,7 +397,7 @@ export default function KioskModeScreen() {
         <View style={styles.ribbonLeft}>
           <WifiIcon color={isOnline ? THEME.colors.success : THEME.colors.danger} size={14} active={isOnline} />
           <Text style={[styles.ribbonText, isOnline ? styles.textOnline : styles.textOffline]}>
-            {isOnline ? 'LARAVEL GATEWAY ACTIVE (ONLINE)' : 'OFFLINE MODE (ON-DEVICE AI ACTIVE)'}
+            {isOnline ? 'MAGNIFY ACTIVE (ONLINE)' : 'OFFLINE MODE (ON-DEVICE AI ACTIVE)'}
           </Text>
         </View>
         <TouchableOpacity style={styles.syncStatusBtn} onPress={triggerSync}>
@@ -472,20 +472,7 @@ export default function KioskModeScreen() {
 
         {/* Right Pane: Stats & Local Live Feed */}
         <View style={styles.rightPane}>
-          {/* Stats Bar */}
-          <View style={styles.statsBar}>
-            <View style={styles.statWidget}>
-              <Text style={styles.statVal}>{totalPunchesToday}</Text>
-              <Text style={styles.statLbl}>Punches Today</Text>
-            </View>
-            <View style={styles.statWidgetBorder} />
-            <View style={styles.statWidget}>
-              <Text style={[styles.statVal, offlineCount > 0 && { color: THEME.colors.warning }]}>
-                {offlineCount}
-              </Text>
-              <Text style={styles.statLbl}>Offline Queue</Text>
-            </View>
-          </View>
+
 
           {/* Live Scan Log Feed */}
           <View style={styles.feedCard}>
@@ -528,7 +515,7 @@ export default function KioskModeScreen() {
             <View style={styles.outerRing} />
             <View style={styles.innerRing} />
             <View style={styles.successCircle}>
-              <CheckIcon color="#000" size={48} />
+              <CheckIcon color="#FFF" size={48} />
             </View>
           </View>
 
@@ -572,7 +559,7 @@ const styles = StyleSheet.create({
     backgroundColor: THEME.colors.background,
   },
   statusRibbon: {
-    backgroundColor: '#07090e',
+    backgroundColor: THEME.colors.background,
     borderBottomWidth: 1,
     borderBottomColor: THEME.colors.border,
     paddingHorizontal: THEME.spacing.md,
@@ -712,7 +699,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: THEME.spacing.sm,
-    backgroundColor: 'rgba(10, 13, 20, 0.85)',
+    backgroundColor: 'rgba(255, 255, 255, 0.85)',
     borderWidth: 1,
     borderColor: THEME.colors.border,
     paddingHorizontal: THEME.spacing.md,
@@ -769,7 +756,7 @@ const styles = StyleSheet.create({
   },
   pickerTrigger: {
     flex: 3,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: 'rgba(0,0,0,0.05)',
     borderWidth: 1,
     borderColor: THEME.colors.border,
     borderRadius: THEME.radius.md,
@@ -797,7 +784,7 @@ const styles = StyleSheet.create({
     height: 44,
   },
   simScanBtnText: {
-    color: '#000',
+    color: '#FFF',
     fontSize: 12,
     fontWeight: 'bold',
   },
@@ -836,7 +823,7 @@ const styles = StyleSheet.create({
     paddingVertical: THEME.spacing.sm,
     paddingHorizontal: THEME.spacing.md,
     borderBottomWidth: 0.5,
-    borderBottomColor: 'rgba(255,255,255,0.03)',
+    borderBottomColor: 'rgba(0,0,0,0.05)',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -906,7 +893,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   logCard: {
-    backgroundColor: 'rgba(0,0,0,0.15)',
+    backgroundColor: 'rgba(0,0,0,0.05)',
     borderWidth: 1,
     borderColor: THEME.colors.border,
     borderRadius: THEME.radius.md,
@@ -991,7 +978,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(7, 9, 14, 0.96)',
+    backgroundColor: 'rgba(255, 255, 255, 0.98)',
     zIndex: 9999,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1081,7 +1068,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: THEME.spacing.xxl,
     borderTopWidth: 0.5,
-    borderTopColor: 'rgba(255,255,255,0.08)',
+    borderTopColor: 'rgba(0,0,0,0.08)',
     paddingTop: THEME.spacing.lg,
     width: '100%',
     maxWidth: 320,

@@ -69,8 +69,8 @@ export default function ServerSetupScreen({ onSetupComplete }: ServerSetupScreen
     >
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
-          <Text style={styles.logoText}>🚀 WORKOIRO KIOSK SYSTEM</Text>
-          <Text style={styles.title}>AI FACE KIOSK MODE</Text>
+          <Text style={styles.logoText}>🚀 WORKORIO KIOSK SYSTEM</Text>
+          <Text style={styles.title}>WORKORIO MAGNIFY MODE</Text>
           <Text style={styles.subtitle}>Direct Edge-Computing Integration Terminal</Text>
         </View>
 
@@ -122,7 +122,7 @@ export default function ServerSetupScreen({ onSetupComplete }: ServerSetupScreen
             disabled={saving}
           >
             {saving ? (
-              <ActivityIndicator color="#000" size="small" />
+              <ActivityIndicator color="#FFF" size="small" />
             ) : (
               <Text style={styles.btnFullText}>Authorize & Launch Kiosk Mode</Text>
             )}
@@ -202,7 +202,7 @@ const styles = StyleSheet.create({
     marginLeft: THEME.spacing.sm,
   },
   input: {
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: 'rgba(0,0,0,0.05)',
     borderWidth: 1,
     borderColor: THEME.colors.border,
     borderRadius: THEME.radius.md,
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
   btnFullText: {
     fontSize: 15,
     fontWeight: 'bold',
-    color: '#000',
+    color: '#FFF',
   },
   btnDisabled: {
     opacity: 0.5,

@@ -42,7 +42,7 @@ export default function KioskTabBar({ activeTab, setActiveTab, bottomPadding }: 
 const styles = StyleSheet.create({
   tabBar: {
     flexDirection: 'row',
-    backgroundColor: '#07090e',
+    backgroundColor: THEME.colors.background,
     borderTopWidth: 1,
     borderTopColor: THEME.colors.border,
     justifyContent: 'space-around',

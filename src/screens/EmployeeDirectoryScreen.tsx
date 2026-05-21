@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
   },
   syncBtn: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(0,0,0,0.03)',
     borderWidth: 1,
     borderColor: THEME.colors.border,
     borderRadius: THEME.radius.md,
@@ -464,7 +464,7 @@ const styles = StyleSheet.create({
     marginBottom: THEME.spacing.xs,
   },
   searchInput: {
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: 'rgba(0,0,0,0.05)',
     borderWidth: 1,
     borderColor: THEME.colors.border,
     borderRadius: THEME.radius.md,
@@ -569,12 +569,12 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   enrollBtnUpdate: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
+    backgroundColor: 'rgba(0,0,0,0.05)',
     borderWidth: 1,
     borderColor: THEME.colors.border,
   },
   enrollBtnText: {
-    color: '#000',
+    color: '#FFF',
     fontSize: 11,
     fontWeight: 'bold',
   },
@@ -601,7 +601,7 @@ const styles = StyleSheet.create({
   // modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.85)',
+    backgroundColor: 'rgba(255,255,255,0.95)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: THEME.spacing.md,
@@ -687,7 +687,7 @@ const styles = StyleSheet.create({
   cameraOverlayMsg: {
     position: 'absolute',
     bottom: THEME.spacing.md,
-    backgroundColor: 'rgba(0,0,0,0.7)',
+    backgroundColor: 'rgba(255,255,255,0.9)',
     paddingHorizontal: THEME.spacing.md,
     paddingVertical: THEME.spacing.xs,
     borderRadius: THEME.radius.round,
@@ -721,7 +721,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: '100%',
     height: '100%',
-    backgroundColor: 'rgba(0,0,0,0.8)',
+    backgroundColor: 'rgba(255,255,255,0.9)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -754,7 +754,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   retryBtn: {
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: 'rgba(0,0,0,0.1)',
     borderWidth: 1,
     borderColor: THEME.colors.border,
     borderRadius: THEME.radius.sm,
@@ -784,7 +784,7 @@ const styles = StyleSheet.create({
     marginTop: THEME.spacing.md,
   },
   closeSuccessBtnText: {
-    color: '#000',
+    color: '#FFF',
     fontSize: 14,
     fontWeight: 'bold',
   },

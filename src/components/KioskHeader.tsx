@@ -10,7 +10,7 @@ export default function KioskHeader({ serverDomain }: KioskHeaderProps) {
   return (
     <View style={styles.appHeader}>
       <View>
-        <Text style={styles.headerTitle}>AI FACE KIOSK</Text>
+        <Text style={styles.headerTitle}>WORKORIO MAGNIFY</Text>
         <Text style={styles.headerSubtitle}>EDGE AUTOMATED ATTENDANCE</Text>
       </View>
 
@@ -25,7 +25,7 @@ export default function KioskHeader({ serverDomain }: KioskHeaderProps) {
 const styles = StyleSheet.create({
   appHeader: {
     height: 60,
-    backgroundColor: '#07090e',
+    backgroundColor: THEME.colors.background,
     borderBottomWidth: 1,
     borderBottomColor: THEME.colors.border,
     paddingHorizontal: THEME.spacing.md,
@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
   serverInfoCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.03)',
+    backgroundColor: 'rgba(0,0,0,0.03)',
     borderWidth: 1,
     borderColor: THEME.colors.border,
     paddingHorizontal: THEME.spacing.sm,
