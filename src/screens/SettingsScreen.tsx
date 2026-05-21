@@ -149,80 +149,9 @@ export default function SettingsScreen({ onLogout }: SettingsScreenProps) {
         <Text style={styles.title}>GATEWAY SETTINGS</Text>
       </View>
 
-      {/* 🧠 Core AI Threshold Controls */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Edge-AI Recognition Core</Text>
 
-        <View style={styles.row}>
-          <View style={styles.rowMeta}>
-            <Text style={styles.rowLabel}>Euclidean Distance Threshold</Text>
-            <Text style={styles.rowDesc}>Tolerance of facial match. Lower = strict match, Higher = lenient. Recommended: 0.60.</Text>
-          </View>
-          <View style={styles.sliderContainer}>
-            <TextInput
-              style={styles.thresholdInput}
-              value={settings.distanceThreshold.toFixed(2)}
-              editable={false}
-            />
-          </View>
-        </View>
-        
-        <View style={styles.sliderButtonsRow}>
-          {[0.4, 0.5, 0.6, 0.7, 0.8].map((tVal) => (
-            <TouchableOpacity
-              key={tVal}
-              style={[
-                styles.sliderValueBtn,
-                settings.distanceThreshold === tVal && styles.sliderValueBtnActive,
-              ]}
-              onPress={() => handleUpdateSetting('distanceThreshold', tVal)}
-            >
-              <Text
-                style={[
-                  styles.sliderValueBtnText,
-                  settings.distanceThreshold === tVal && { color: '#000', fontWeight: 'bold' },
-                ]}
-              >
-                {tVal.toFixed(2)}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-      </View>
 
-      {/* 📍 GPS Settings */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Gateway Geo-Location (GPS)</Text>
-        <Text style={styles.rowDesc}>Set coordinates to attach to punch-in actions. Required by the backend to log valid office locations.</Text>
-        
-        <View style={styles.coordsRow}>
-          <View style={styles.coordCol}>
-            <Text style={styles.coordLabel}>Latitude</Text>
-            <TextInput
-              style={styles.coordInput}
-              value={tempLat}
-              onChangeText={setTempLat}
-              keyboardType="numeric"
-              placeholder="e.g. 26.8467"
-              placeholderTextColor={THEME.colors.textMuted}
-            />
-          </View>
-          <View style={styles.coordCol}>
-            <Text style={styles.coordLabel}>Longitude</Text>
-            <TextInput
-              style={styles.coordInput}
-              value={tempLng}
-              onChangeText={setTempLng}
-              keyboardType="numeric"
-              placeholder="e.g. 80.9462"
-              placeholderTextColor={THEME.colors.textMuted}
-            />
-          </View>
-          <TouchableOpacity style={styles.saveCoordsBtn} onPress={handleSaveCoordinates}>
-            <Text style={styles.saveCoordsBtnText}>Save</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+
 
       {/* 🔄 Data Synchronization */}
       <View style={styles.section}>
@@ -282,9 +211,7 @@ export default function SettingsScreen({ onLogout }: SettingsScreenProps) {
         <Text style={styles.sectionTitle}>Maintenance & Security</Text>
         
         <View style={styles.actionsContainer}>
-          <TouchableOpacity style={styles.actionBtn} onPress={handleClearLocalLogs}>
-            <Text style={styles.actionBtnText}>Clear Dashboard History Logs</Text>
-          </TouchableOpacity>
+
 
           <TouchableOpacity style={[styles.actionBtn, styles.dangerBtn]} onPress={handleResetKiosk}>
             <Text style={[styles.actionBtnText, styles.dangerText]}>Disconnect Gateway Connection</Text>

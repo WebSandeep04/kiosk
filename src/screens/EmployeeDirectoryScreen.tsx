@@ -146,6 +146,7 @@ export default function EmployeeDirectoryScreen() {
             const photoFile = await photoOutput.capturePhotoToFile({
               flashMode: 'off',
               enableRedEyeReduction: false,
+              enableShutterSound: false,
             }, {});
             vector = await nativeFaceRecognition.extractFaceEmbedding(photoFile.filePath);
           } else {

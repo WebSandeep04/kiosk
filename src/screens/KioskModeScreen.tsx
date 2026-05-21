@@ -101,6 +101,7 @@ export default function KioskModeScreen() {
           const photoFile = await photoOutput.capturePhotoToFile({
             flashMode: 'off',
             enableRedEyeReduction: false,
+            enableShutterSound: false,
           }, {});
 
           if (typeof nativeFaceRecognition.extractFaceEmbedding !== 'function') {
