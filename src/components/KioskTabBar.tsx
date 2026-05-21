@@ -47,7 +47,7 @@ const styles = StyleSheet.create({
     borderTopColor: THEME.colors.border,
     justifyContent: 'space-around',
     alignItems: 'center',
-    paddingTop: 12,
+    paddingTop: 8,
   },
   tabItem: {
     flex: 1,
@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
   tabItemActive: {
     borderTopWidth: 2,
     borderTopColor: THEME.colors.accent,
-    paddingTop: 4,
+    paddingTop: 2,
   },
   tabText: {
     color: THEME.colors.textMuted,

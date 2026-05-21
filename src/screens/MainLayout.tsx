@@ -75,7 +75,7 @@ export default function MainLayout() {
       <KioskTabBar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        bottomPadding={(safeAreaInsets.bottom || 0) + 38}
+        bottomPadding={safeAreaInsets.bottom || 8}
       />
     </View>
   );

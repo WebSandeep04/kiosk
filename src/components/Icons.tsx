@@ -95,6 +95,13 @@ export const CrossIcon = ({ color, size }: IconProps) => (
   </View>
 );
 
+export const PlusIcon = ({ color, size }: IconProps) => (
+  <View style={[styles.iconContainer, { width: size, height: size, justifyContent: 'center', alignItems: 'center' }]}>
+    <View style={[styles.crossBar, { backgroundColor: color }]} />
+    <View style={[styles.crossBar, { backgroundColor: color, transform: [{ rotate: '90deg' }] }]} />
+  </View>
+);
+
 const styles = StyleSheet.create({
   iconContainer: {
     position: 'relative',

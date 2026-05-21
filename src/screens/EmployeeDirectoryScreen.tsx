@@ -18,7 +18,7 @@ import { storageService, CachedEmployee } from '../services/storage';
 import { apiService } from '../services/api';
 import { faceMatcherService } from '../services/faceMatcher';
 import { nativeFaceRecognition } from '../services/nativeFaceRecognition';
-import { UsersIcon, SyncIcon, CameraIcon, CheckIcon, CrossIcon, InfoIcon } from '../components/Icons';
+import { UsersIcon, SyncIcon, CameraIcon, CheckIcon, CrossIcon, InfoIcon, PlusIcon } from '../components/Icons';
 import { useAppDispatch, useAppSelector } from '../store';
 import { loadCachedEmployees, syncEmployeesFromServer, enrollFaceAction } from '../store/employeesSlice';
 import { loadSettings } from '../store/settingsSlice';
@@ -217,28 +217,22 @@ export default function EmployeeDirectoryScreen() {
           </View>
         </View>
 
-        <View style={styles.actions}>
-          <View
-            style={[
-              styles.badge,
-              isEnrolled ? styles.badgeSuccess : styles.badgeWarning,
-            ]}
-          >
-            {isEnrolled ? (
-              <CheckIcon color={THEME.colors.success} size={10} />
-            ) : (
-              <CrossIcon color={THEME.colors.warning} size={10} />
-            )}
-            <Text style={[styles.badgeText, isEnrolled ? styles.textSuccess : styles.textWarning]}>
-              {isEnrolled ? 'Face Enrolled' : 'No Signature'}
-            </Text>
-          </View>
+        <View style={styles.enrollStatusCol}>
+          <Text style={[styles.statusText, isEnrolled ? styles.textSuccess : styles.textWarning]}>
+            {isEnrolled ? 'Enrolled: Yes' : 'Enrolled: No'}
+          </Text>
+        </View>
 
+        <View style={styles.actionCol}>
           <TouchableOpacity
             style={[styles.enrollBtn, isEnrolled && styles.enrollBtnUpdate]}
             onPress={() => startEnrollment(item)}
           >
-            <CameraIcon color={isEnrolled ? THEME.colors.text : '#000'} size={12} />
+            {isEnrolled ? (
+              <CameraIcon color={THEME.colors.text} size={12} />
+            ) : (
+              <PlusIcon color="#FFF" size={12} />
+            )}
             <Text style={[styles.enrollBtnText, isEnrolled && { color: THEME.colors.text }]}>
               {isEnrolled ? 'Update Face' : 'Register'}
             </Text>
@@ -250,28 +244,7 @@ export default function EmployeeDirectoryScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerTitleRow}>
-          <UsersIcon color={THEME.colors.accent} size={28} />
-          <Text style={styles.title}>EMPLOYEE DATABASE</Text>
-        </View>
-        <TouchableOpacity
-          style={[styles.syncBtn, reduxSyncing && styles.btnDisabled]}
-          onPress={handleSyncData}
-          disabled={reduxSyncing}
-        >
-          {reduxSyncing ? (
-            <ActivityIndicator color={THEME.colors.text} size="small" />
-          ) : (
-            <>
-              <SyncIcon color={THEME.colors.text} size={14} />
-              <Text style={styles.syncBtnText}>Reload Profiles</Text>
-            </>
-          )}
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.searchBarContainer}>
+      <View style={styles.searchRow}>
         <TextInput
           style={styles.searchInput}
           placeholder="Search employees by name..."
@@ -280,6 +253,17 @@ export default function EmployeeDirectoryScreen() {
           onChangeText={setSearchQuery}
           clearButtonMode="while-editing"
         />
+        <TouchableOpacity
+          style={[styles.syncBtnIconOnly, reduxSyncing && styles.btnDisabled]}
+          onPress={handleSyncData}
+          disabled={reduxSyncing}
+        >
+          {reduxSyncing ? (
+            <ActivityIndicator color={THEME.colors.text} size="small" />
+          ) : (
+            <SyncIcon color={THEME.colors.text} size={16} />
+          )}
+        </TouchableOpacity>
       </View>
 
       {loading ? (
@@ -421,49 +405,28 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: THEME.colors.background,
   },
-  header: {
+  searchRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     paddingHorizontal: THEME.spacing.md,
     paddingTop: THEME.spacing.md,
-  },
-  headerTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    marginBottom: THEME.spacing.xs,
     gap: THEME.spacing.sm,
   },
-  title: {
-    color: THEME.colors.text,
-    fontSize: 20,
-    fontWeight: '900',
-    letterSpacing: 1.5,
-  },
-  syncBtn: {
+  syncBtnIconOnly: {
     backgroundColor: 'rgba(0,0,0,0.03)',
     borderWidth: 1,
     borderColor: THEME.colors.border,
     borderRadius: THEME.radius.md,
-    paddingHorizontal: THEME.spacing.md,
-    paddingVertical: THEME.spacing.sm,
-    flexDirection: 'row',
+    padding: THEME.spacing.sm,
+    justifyContent: 'center',
     alignItems: 'center',
-    gap: THEME.spacing.sm,
-  },
-  syncBtnText: {
-    color: THEME.colors.text,
-    fontSize: 12,
-    fontWeight: '600',
   },
   btnDisabled: {
     opacity: 0.4,
   },
-  searchBarContainer: {
-    paddingHorizontal: THEME.spacing.md,
-    marginTop: THEME.spacing.md,
-    marginBottom: THEME.spacing.xs,
-  },
   searchInput: {
+    flex: 1,
     backgroundColor: 'rgba(0,0,0,0.05)',
     borderWidth: 1,
     borderColor: THEME.colors.border,
@@ -481,8 +444,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: THEME.colors.border,
     borderRadius: THEME.radius.md,
-    padding: THEME.spacing.md,
-    marginBottom: THEME.spacing.sm,
+    padding: THEME.spacing.sm,
+    marginBottom: 4,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -493,21 +456,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   avatarImage: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    marginRight: THEME.spacing.md,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    marginRight: THEME.spacing.sm,
   },
   avatarPlaceholder: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: 'rgba(245, 158, 11, 0.1)',
     borderWidth: 1,
     borderColor: THEME.colors.warning,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: THEME.spacing.md,
+    marginRight: THEME.spacing.sm,
   },
   avatarEnrolled: {
     backgroundColor: 'rgba(16, 185, 129, 0.1)',
@@ -515,7 +478,7 @@ const styles = StyleSheet.create({
   },
   avatarText: {
     color: THEME.colors.text,
-    fontSize: 15,
+    fontSize: 12,
     fontWeight: 'bold',
   },
   meta: {
@@ -523,33 +486,23 @@ const styles = StyleSheet.create({
   },
   empName: {
     color: THEME.colors.text,
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: 'bold',
   },
   empId: {
     color: THEME.colors.textMuted,
-    fontSize: 11,
-    marginTop: 2,
+    fontSize: 9,
+    marginTop: 1,
   },
-  actions: {
+  enrollStatusCol: {
+    width: 90,
+    alignItems: 'flex-start',
+  },
+  actionCol: {
+    width: 90,
     alignItems: 'flex-end',
-    gap: THEME.spacing.sm,
   },
-  badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: THEME.radius.round,
-  },
-  badgeSuccess: {
-    backgroundColor: THEME.colors.successGlass,
-  },
-  badgeWarning: {
-    backgroundColor: THEME.colors.warningGlass,
-  },
-  badgeText: {
+  statusText: {
     fontSize: 10,
     fontWeight: 'bold',
   },
@@ -575,7 +528,7 @@ const styles = StyleSheet.create({
   },
   enrollBtnText: {
     color: '#FFF',
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: 'bold',
   },
   loadingContainer: {

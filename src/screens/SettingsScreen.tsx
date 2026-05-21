@@ -144,10 +144,6 @@ export default function SettingsScreen({ onLogout }: SettingsScreenProps) {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContainer}>
-      <View style={styles.header}>
-        <SettingsIcon color={THEME.colors.accent} size={28} />
-        <Text style={styles.title}>GATEWAY SETTINGS</Text>
-      </View>
 
 
 
@@ -214,7 +210,7 @@ export default function SettingsScreen({ onLogout }: SettingsScreenProps) {
 
 
           <TouchableOpacity style={[styles.actionBtn, styles.dangerBtn]} onPress={handleResetKiosk}>
-            <Text style={[styles.actionBtnText, styles.dangerText]}>Disconnect Gateway Connection</Text>
+            <Text style={[styles.actionBtnText, styles.dangerText]}>Clear all Data</Text>
           </TouchableOpacity>
         </View>
       </View>
