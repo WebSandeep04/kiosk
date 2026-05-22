@@ -488,7 +488,7 @@ export default function KioskModeScreen() {
           <View style={styles.feedCard}>
             <Text style={styles.feedTitle}>LIVE ATTENDANCE FEED</Text>
             <FlatList
-              data={localLogs.filter(log => log.success && (log.action === 'in' || log.action === 'out'))}
+              data={localLogs.filter(log => log.success && (log.action === 'in' || log.action === 'out' || log.action === 'offline_queued'))}
               keyExtractor={(item) => item.id}
               renderItem={renderLogItem}
               scrollEnabled={false} // FlatList nested in ScrollView

@@ -19,9 +19,47 @@ const initialState: LogsState = {
 };
 
 // Async thunks
-export const loadLocalLogsAndQueue = createAsyncThunk('logs/loadAll', async () => {
-  const logsList = await storageService.getLocalPunchLogs();
+export const loadLocalLogsAndQueue = createAsyncThunk('logs/loadAll', async (_, { getState }) => {
+  const state = getState() as any;
+  const isOnline = state.logs?.isOnline ?? true;
+  
   const offlineQueue = await storageService.getOfflineQueue();
+  let logsList: any[] = [];
+
+  if (isOnline) {
+    try {
+      const response = await apiClient.get('/kiosk/attendance/today-logs');
+      if (response.data && response.data.data) {
+        logsList = response.data.data;
+      } else {
+        logsList = await storageService.getLocalPunchLogs();
+      }
+    } catch (e) {
+      console.error('Failed to fetch today logs', e);
+      logsList = await storageService.getLocalPunchLogs();
+    }
+  } else {
+    logsList = await storageService.getLocalPunchLogs();
+  }
+
+  // Merge offlineQueue punches that haven't been synced yet
+  const formattedQueue = offlineQueue.map(q => ({
+    id: q.id,
+    name: q.name,
+    action: 'offline_queued',
+    time: new Date(q.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    success: true,
+    offline: true,
+    timestamp: q.timestamp
+  }));
+
+  // Filter out offline_queued from logsList to prevent duplicates
+  logsList = logsList.filter(l => l.action !== 'offline_queued');
+
+  // Combine and sort by time/id (offline queue first, then server logs)
+  // For simplicity, we just put queued items at the top
+  logsList = [...formattedQueue, ...logsList].slice(0, 50);
+
   return { logsList, offlineQueue };
 });
 
