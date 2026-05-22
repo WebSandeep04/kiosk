@@ -407,7 +407,7 @@ export default function KioskModeScreen() {
         <View style={styles.ribbonLeft}>
           <WifiIcon color={isOnline ? THEME.colors.success : THEME.colors.danger} size={14} active={isOnline} />
           <Text style={[styles.ribbonText, isOnline ? styles.textOnline : styles.textOffline]}>
-            {isOnline ? 'MAGNIFY ACTIVE (ONLINE)' : 'OFFLINE MODE (ON-DEVICE AI ACTIVE)'}
+            {isOnline ? 'MAGNIFY ACTIVE (ONLINE)' : 'OFFLINE MODE'}
           </Text>
         </View>
         <TouchableOpacity style={styles.syncStatusBtn} onPress={triggerSync}>
