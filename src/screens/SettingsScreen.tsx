@@ -240,7 +240,8 @@ export default function SettingsScreen({ onLogout }: SettingsScreenProps) {
           </TouchableOpacity>
           <TouchableOpacity style={styles.actionBtn} onPress={() => setLogsViewerVisible(true)}>
             <Text style={styles.actionBtnText}>📋 View System Logs</Text>
-          </TouchableOpacity>          <TouchableOpacity style={[styles.actionBtn, styles.dangerBtn]} onPress={handleResetKiosk}>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.actionBtn, styles.dangerBtn]} onPress={handleResetKiosk}>
             <Text style={[styles.actionBtnText, styles.dangerText]}>Clear all Data</Text>
           </TouchableOpacity>
         </View>

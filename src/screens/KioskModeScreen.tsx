@@ -379,11 +379,11 @@ export default function KioskModeScreen() {
               isQueued && { color: THEME.colors.warning },
               !isSuccess && { color: THEME.colors.danger },
             ]}>
-              {item.action === 'in' && 'IN'}
-              {item.action === 'out' && 'OUT'}
-              {isQueued && 'QUEUED'}
-              {item.action === 'match_failed' && 'MATCH FAILED'}
-              {item.action === 'rejected' && 'REJECTED'}
+              {item.action === 'in' ? 'IN' : null}
+              {item.action === 'out' ? 'OUT' : null}
+              {isQueued ? 'QUEUED' : null}
+              {item.action === 'match_failed' ? 'MATCH FAILED' : null}
+              {item.action === 'rejected' ? 'REJECTED' : null}
             </Text>
           </View>
           <Text style={styles.logTime}>{item.time}</Text>
@@ -488,7 +488,7 @@ export default function KioskModeScreen() {
           <View style={styles.feedCard}>
             <Text style={styles.feedTitle}>LIVE ATTENDANCE FEED</Text>
             <FlatList
-              data={localLogs.filter(log => log.action !== 'rejected')}
+              data={localLogs.filter(log => log.success && (log.action === 'in' || log.action === 'out'))}
               keyExtractor={(item) => item.id}
               renderItem={renderLogItem}
               scrollEnabled={false} // FlatList nested in ScrollView
