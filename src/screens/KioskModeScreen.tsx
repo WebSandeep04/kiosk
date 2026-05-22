@@ -354,7 +354,6 @@ export default function KioskModeScreen() {
           </View>
           <View>
             <Text style={styles.logName}>{item.name}</Text>
-            <Text style={styles.logSub}>{item.message || 'Edge Verified'}</Text>
           </View>
         </View>
 
@@ -482,7 +481,7 @@ export default function KioskModeScreen() {
           <View style={styles.feedCard}>
             <Text style={styles.feedTitle}>LIVE ATTENDANCE FEED</Text>
             <FlatList
-              data={localLogs}
+              data={localLogs.filter(log => log.action !== 'rejected')}
               keyExtractor={(item) => item.id}
               renderItem={renderLogItem}
               scrollEnabled={false} // FlatList nested in ScrollView
@@ -940,11 +939,6 @@ const styles = StyleSheet.create({
     color: THEME.colors.text,
     fontSize: 13,
     fontWeight: '600',
-  },
-  logSub: {
-    color: THEME.colors.textMuted,
-    fontSize: 10,
-    marginTop: 1,
   },
   logRight: {
     alignItems: 'flex-end',

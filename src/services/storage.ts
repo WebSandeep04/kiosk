@@ -29,6 +29,7 @@ export interface KioskSettings {
   latitude: number | null;
   longitude: number | null;
   adminPin?: string;
+  deviceName?: string;
 }
 
 const DEFAULT_SETTINGS: KioskSettings = {
@@ -41,6 +42,7 @@ const DEFAULT_SETTINGS: KioskSettings = {
   latitude: 26.8467, 
   longitude: 80.9462,
   adminPin: '',
+  deviceName: '',
 };
 
 let db: SQLiteDatabase | null = null;

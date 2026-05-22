@@ -31,12 +31,14 @@ export default function SettingsScreen({ onLogout }: SettingsScreenProps) {
   const [employeeCount, setEmployeeCount] = useState(0);
   const [tempLat, setTempLat] = useState('');
   const [tempLng, setTempLng] = useState('');
+  const [tempDeviceName, setTempDeviceName] = useState('');
 
   const loadData = async () => {
     const activeSettings = await storageService.getSettings();
     setSettings(activeSettings);
     setTempLat(activeSettings.latitude?.toString() || '');
     setTempLng(activeSettings.longitude?.toString() || '');
+    setTempDeviceName(activeSettings.deviceName || '');
 
     const employees = await storageService.getEmployees();
     setEmployeeCount(employees.length);
@@ -65,6 +67,11 @@ export default function SettingsScreen({ onLogout }: SettingsScreenProps) {
     await handleUpdateSetting('latitude', lat);
     await handleUpdateSetting('longitude', lng);
     Alert.alert('Success', 'GPS coordinates updated successfully.');
+  };
+
+  const handleSaveDeviceName = async () => {
+    await handleUpdateSetting('deviceName', tempDeviceName);
+    Alert.alert('Success', 'Device Name updated successfully.');
   };
 
   const handleSyncEmployees = async () => {
@@ -145,9 +152,26 @@ export default function SettingsScreen({ onLogout }: SettingsScreenProps) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.scrollContainer}>
 
+      {/* 📱 Device Info */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Device Information</Text>
 
-
-
+        <View style={styles.coordsRow}>
+          <View style={styles.coordCol}>
+            <Text style={styles.coordLabel}>Device Name</Text>
+            <TextInput
+              style={styles.coordInput}
+              value={tempDeviceName}
+              onChangeText={setTempDeviceName}
+              placeholder="e.g. Lobby Entrance Kiosk"
+              placeholderTextColor={THEME.colors.textMuted}
+            />
+          </View>
+          <TouchableOpacity style={styles.saveCoordsBtn} onPress={handleSaveDeviceName}>
+            <Text style={styles.saveCoordsBtnText}>Save</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
 
       {/* 🔄 Data Synchronization */}
       <View style={styles.section}>
@@ -205,7 +229,7 @@ export default function SettingsScreen({ onLogout }: SettingsScreenProps) {
       {/* 🛠️ Maintenance & Reset */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Maintenance & Security</Text>
-        
+
         <View style={styles.actionsContainer}>
 
 
@@ -343,7 +367,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   coordInput: {
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: 'rgba(0,0,0,0.02)',
     borderWidth: 1,
     borderColor: THEME.colors.border,
     borderRadius: THEME.radius.sm,
@@ -353,7 +377,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   saveCoordsBtn: {
-    backgroundColor: THEME.colors.accent,
+    backgroundColor: 'rgba(0,0,0,0.05)',
+    borderWidth: 1,
+    borderColor: THEME.colors.border,
     borderRadius: THEME.radius.sm,
     paddingVertical: THEME.spacing.xs + 2,
     paddingHorizontal: THEME.spacing.md,
@@ -361,9 +387,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   saveCoordsBtnText: {
-    color: '#000',
+    color: THEME.colors.text,
     fontSize: 12,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   syncRow: {
     flexDirection: 'row',

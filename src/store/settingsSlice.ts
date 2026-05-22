@@ -12,6 +12,7 @@ export interface SettingsState {
   loading: boolean;
   error: string | null;
   adminPin: string | null;
+  deviceName: string | null;
 }
 
 const initialState: SettingsState = {
@@ -25,6 +26,7 @@ const initialState: SettingsState = {
   loading: false,
   error: null,
   adminPin: null,
+  deviceName: null,
 };
 
 // Async thunks for storage interactions
@@ -62,6 +64,7 @@ const settingsSlice = createSlice({
         state.latitude = action.payload.latitude ?? null;
         state.longitude = action.payload.longitude ?? null;
         state.adminPin = action.payload.adminPin || null;
+        state.deviceName = action.payload.deviceName || null;
       })
       .addCase(loadSettings.rejected, (state, action) => {
         state.loading = false;
@@ -83,6 +86,7 @@ const settingsSlice = createSlice({
         if (action.payload.latitude !== undefined) state.latitude = action.payload.latitude;
         if (action.payload.longitude !== undefined) state.longitude = action.payload.longitude;
         if (action.payload.adminPin !== undefined) state.adminPin = action.payload.adminPin;
+        if (action.payload.deviceName !== undefined) state.deviceName = action.payload.deviceName;
       });
   },
 });
