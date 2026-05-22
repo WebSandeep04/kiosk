@@ -36,7 +36,7 @@ export const loadSettings = createAsyncThunk('settings/loadSettings', async () =
 export const updateSettings = createAsyncThunk(
   'settings/updateSettings',
   async (settings: Partial<Omit<SettingsState, 'loading' | 'error'>>) => {
-    await storageService.saveSettings(settings);
+    await storageService.saveSettings(settings as any);
     return settings;
   }
 );

@@ -60,7 +60,7 @@ export default function KioskModeScreen() {
   const [liveScanningActive, setLiveScanningActive] = useState(true);
   const [debugMessage, setDebugMessage] = useState<string>('Initializing...');
   const [feedbackMsg, setFeedbackMsg] = useState<{ text: string, type: 'error' | 'warning' | 'info' } | null>(null);
-  const feedbackTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastMatchRef = useRef<number>(0);
   const isCapturingRef = useRef<boolean>(false);
   // Multi-frame confirmation: track consecutive matches to the same employee
@@ -112,7 +112,7 @@ export default function KioskModeScreen() {
 
           // Small gap between frames so they are distinct
           if (f < FRAMES_TO_SAMPLE - 1) {
-            await new Promise(r => setTimeout(r, 300));
+            await new Promise<void>(resolve => setTimeout(() => resolve(), 300));
           }
         }
 
@@ -270,18 +270,22 @@ export default function KioskModeScreen() {
         return;
       }
     } catch (err: any) {
-      if (err && typeof err === 'string' && (err.includes('already punched') || err.includes('limit') || err.includes('validation') || err.includes('invalid') || err.includes('Rejected'))) {
-        // Explicit business logic rejection from Laravel (e.g. duplicate punch-in guard)
+      const errMsg = err?.message || (typeof err === 'string' ? err : 'Unknown error');
+      const status = err?.status;
+      const isBusinessRejection = status === 400 || status === 403 || status === 422 || status === 429;
+
+      if (isBusinessRejection || (typeof err === 'string' && (err.includes('already punched') || err.includes('limit') || err.includes('validation') || err.includes('invalid') || err.includes('Rejected')))) {
+        // Explicit business logic rejection from Laravel (e.g. duplicate punch-in guard, worklog, task pending)
         Vibration.vibrate(100);
         await storageService.addLocalPunchLog({
           name: employee.name,
           action: 'rejected',
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           success: false,
-          message: err,
+          message: errMsg,
         });
         dispatch(loadLocalLogsAndQueue());
-        Alert.alert('Punch Rejected', err);
+        Alert.alert('Punch Rejected', errMsg);
         return;
       }
 

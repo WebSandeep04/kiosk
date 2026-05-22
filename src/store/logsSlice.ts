@@ -45,7 +45,7 @@ export const syncOfflineQueueAction = createAsyncThunk('logs/syncQueue', async (
   const processedIds: string[] = [];
 
   // Helper: wait for ms milliseconds
-  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+  const delay = (ms: number) => new Promise<void>(resolve => setTimeout(() => resolve(), ms));
 
   for (const punch of queue) {
     let attempts = 0;
@@ -81,14 +81,13 @@ export const syncOfflineQueueAction = createAsyncThunk('logs/syncQueue', async (
         }
       } catch (err: any) {
         const status = err.response?.status;
-        if (status === 429) {
-          // 429 from kiosk endpoint = duplicate punch guard (same employee punched within 2 min).
-          // This is a business rejection, NOT a network rate limit. Mark as processed & remove from queue.
+        if (status === 429 || status === 403 || status === 422 || status === 400) {
+          // Business rejection from server. Mark as processed & remove from queue.
           processedIds.push(punch.id);
           success = true;
-          logs.push(`⚠ Skipped: ${punch.name} — Already punched recently (duplicate guard)`);
+          logs.push(`⚠ Skipped: ${punch.name} — ${err.response?.data?.message || 'Rejected by server'}`);
         } else {
-          // Other error — don't retry
+          // Other error (e.g., network error or 500) — don't retry in this loop
           failedCount++;
           logs.push(`✗ Error: ${punch.name} — ${err.response?.data?.message || err.message || 'Unknown error'}`);
           break;
@@ -127,7 +126,8 @@ export const punchInAction = createAsyncThunk(
       return { success: true, data: payload };
     } catch (err: any) {
       const errMsg = err.response?.data?.message || err.message || 'Punch-in request failed.';
-      return rejectWithValue(errMsg);
+      const status = err.response?.status;
+      return rejectWithValue({ message: errMsg, status });
     }
   }
 );
