@@ -226,6 +226,11 @@ export default function KioskModeScreen() {
   };
 
   const executePunchIn = async (employee: CachedEmployee, confidence: number) => {
+    if (!settings?.deviceName || settings.deviceName.trim() === '') {
+      showFeedback('Device Name not configured! Please set in Settings.', 'error');
+      return;
+    }
+
     setMatchedEmployeeName(employee.name);
     setPunchConfidence(confidence);
 
@@ -239,6 +244,7 @@ export default function KioskModeScreen() {
         confidence_match: confidence,
         latitude: lat,
         longitude: lng,
+        device_name: settings!.deviceName!,
       })).unwrap();
 
       if (res.success && res.data) {
@@ -299,6 +305,7 @@ export default function KioskModeScreen() {
         confidence_match: confidence,
         latitude: lat,
         longitude: lng,
+        device_name: settings!.deviceName!,
       });
 
       setPunchAction('in'); // Default offline action

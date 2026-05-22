@@ -59,6 +59,7 @@ export const syncOfflineQueueAction = createAsyncThunk('logs/syncQueue', async (
           confidence_match: punch.confidence_match,
           latitude: punch.latitude,
           longitude: punch.longitude,
+          device_name: punch.device_name,
         });
 
         const data = response.data;
@@ -118,6 +119,7 @@ export const punchInAction = createAsyncThunk(
     confidence_match: number;
     latitude: number | null;
     longitude: number | null;
+    device_name: string;
   }, { rejectWithValue }) => {
     try {
       const response = await apiClient.post('/kiosk/attendance/punch-in', params);

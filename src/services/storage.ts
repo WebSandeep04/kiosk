@@ -17,6 +17,7 @@ export interface OfflinePunch {
   latitude: number | null;
   longitude: number | null;
   timestamp: string;
+  device_name: string;
 }
 
 export interface KioskSettings {
@@ -64,13 +65,40 @@ export const storageService = {
         );
         // Offline Queue table
         tx.executeSql(
-          'CREATE TABLE IF NOT EXISTS offline_queue (id TEXT PRIMARY KEY, user_id INTEGER, name TEXT, confidence_match REAL, latitude REAL, longitude REAL, timestamp TEXT);'
+          'CREATE TABLE IF NOT EXISTS offline_queue (id TEXT PRIMARY KEY, user_id INTEGER, name TEXT, confidence_match REAL, latitude REAL, longitude REAL, timestamp TEXT, device_name TEXT);'
         );
+
         // Punch Logs table
         tx.executeSql(
           'CREATE TABLE IF NOT EXISTS punch_logs (id TEXT PRIMARY KEY, name TEXT, action TEXT, time TEXT, success INTEGER, offline INTEGER, message TEXT, timestamp TEXT);'
         );
       });
+
+      // Safe schema migration for device_name
+      await new Promise<void>((resolve) => {
+        db!.transaction(tx => {
+          tx.executeSql(
+            "PRAGMA table_info(offline_queue);",
+            [],
+            (_, result) => {
+              let hasDeviceName = false;
+              for (let i = 0; i < result.rows.length; i++) {
+                if (result.rows.item(i).name === 'device_name') {
+                  hasDeviceName = true;
+                  break;
+                }
+              }
+              if (!hasDeviceName) {
+                tx.executeSql("ALTER TABLE offline_queue ADD COLUMN device_name TEXT;", [], () => resolve(), () => { resolve(); return false; });
+              } else {
+                resolve();
+              }
+            },
+            () => { resolve(); return false; }
+          );
+        });
+      });
+
     } catch (error) {
       console.error('Failed to initialize SQLite DB:', error);
       throw error;
@@ -80,6 +108,29 @@ export const storageService = {
   async _getDB(): Promise<SQLiteDatabase> {
     if (!db) await this.initDB();
     return db!;
+  },
+
+  /**
+   * Raw Query Executor for Developer Tools
+   */
+  async executeRawQuery(query: string, params: any[] = []): Promise<any[]> {
+    const database = await this._getDB();
+    return new Promise((resolve, reject) => {
+      database.transaction(tx => {
+        tx.executeSql(
+          query,
+          params,
+          (_, result) => {
+            const rows = [];
+            for (let i = 0; i < result.rows.length; i++) {
+              rows.push(result.rows.item(i));
+            }
+            resolve(rows);
+          },
+          (_, err) => { reject(err); return false; }
+        );
+      });
+    });
   },
 
   /**
@@ -190,7 +241,7 @@ export const storageService = {
     const database = await this._getDB();
     await database.transaction(tx => {
       tx.executeSql(
-        'INSERT INTO offline_queue (id, user_id, name, confidence_match, latitude, longitude, timestamp) VALUES (?, ?, ?, ?, ?, ?, ?);',
+        'INSERT INTO offline_queue (id, user_id, name, confidence_match, latitude, longitude, timestamp, device_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?);',
         [
           newPunch.id, 
           newPunch.user_id, 
@@ -198,7 +249,8 @@ export const storageService = {
           newPunch.confidence_match, 
           newPunch.latitude === null ? 0 : newPunch.latitude, 
           newPunch.longitude === null ? 0 : newPunch.longitude, 
-          newPunch.timestamp
+          newPunch.timestamp,
+          newPunch.device_name
         ],
         () => {},
         (_, err) => { console.error('Failed to insert offline punch', err); return false; }

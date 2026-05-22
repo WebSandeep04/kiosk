@@ -17,6 +17,8 @@ import { SettingsIcon, SyncIcon, WifiIcon, CrossIcon } from '../components/Icons
 import { useAppDispatch } from '../store';
 import { syncEmployeesFromServer } from '../store/employeesSlice';
 import { syncOfflineQueueAction } from '../store/logsSlice';
+import DatabaseViewerScreen from './DatabaseViewerScreen';
+import SystemLogsScreen from './SystemLogsScreen';
 
 interface SettingsScreenProps {
   onLogout: () => void;
@@ -28,6 +30,8 @@ export default function SettingsScreen({ onLogout }: SettingsScreenProps) {
   const [syncing, setSyncing] = useState(false);
   const [syncingQueue, setSyncingQueue] = useState(false);
   const [offlineQueue, setOfflineQueue] = useState<OfflinePunch[]>([]);
+  const [dbViewerVisible, setDbViewerVisible] = useState(false);
+  const [logsViewerVisible, setLogsViewerVisible] = useState(false);
   const [employeeCount, setEmployeeCount] = useState(0);
   const [tempLat, setTempLat] = useState('');
   const [tempLng, setTempLng] = useState('');
@@ -231,15 +235,22 @@ export default function SettingsScreen({ onLogout }: SettingsScreenProps) {
         <Text style={styles.sectionTitle}>Maintenance & Security</Text>
 
         <View style={styles.actionsContainer}>
-
-
-          <TouchableOpacity style={[styles.actionBtn, styles.dangerBtn]} onPress={handleResetKiosk}>
+          <TouchableOpacity style={styles.actionBtn} onPress={() => setDbViewerVisible(true)}>
+            <Text style={styles.actionBtnText}>🗄️ View Raw Database</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionBtn} onPress={() => setLogsViewerVisible(true)}>
+            <Text style={styles.actionBtnText}>📋 View System Logs</Text>
+          </TouchableOpacity>          <TouchableOpacity style={[styles.actionBtn, styles.dangerBtn]} onPress={handleResetKiosk}>
             <Text style={[styles.actionBtnText, styles.dangerText]}>Clear all Data</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <Text style={styles.versionText}>Edge Kiosk Engine v1.0.0 • Connected to Magnify</Text>
+
+      {/* Dev Tools Modals */}
+      <DatabaseViewerScreen visible={dbViewerVisible} onClose={() => setDbViewerVisible(false)} />
+      <SystemLogsScreen visible={logsViewerVisible} onClose={() => setLogsViewerVisible(false)} />
     </ScrollView>
   );
 }
